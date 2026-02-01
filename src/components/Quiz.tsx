@@ -83,7 +83,7 @@ const DraggableUserToken = ({ x, y, type }: { x: number, y: number, type: Dragga
         zIndex: 100,
     } : undefined;
 
-    // Render een bal
+    // Render een voetbal
     if (type === 'ball') {
         return (
             <div
@@ -98,24 +98,24 @@ const DraggableUserToken = ({ x, y, type }: { x: number, y: number, type: Dragga
                 {...attributes}
                 className="touch-none cursor-move"
             >
-                <div style={{ transform: 'translate(-50%, -50%)' }} className="relative">
-                    <div className="w-10 h-10 bg-white border-4 border-red-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                        <span className="font-bold text-red-600 text-xs">JIJ</span>
-                    </div>
-                    {/* Voetbal patroon */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30" viewBox="0 0 40 40">
-                        <circle cx="20" cy="8" r="4" fill="black"/>
-                        <circle cx="8" cy="20" r="4" fill="black"/>
-                        <circle cx="32" cy="20" r="4" fill="black"/>
-                        <circle cx="14" cy="32" r="4" fill="black"/>
-                        <circle cx="26" cy="32" r="4" fill="black"/>
+                <div style={{ transform: 'translate(-50%, -50%)' }} className="relative animate-pulse">
+                    <svg viewBox="0 0 50 50" className="w-12 h-12 drop-shadow-lg">
+                        {/* Voetbal basis */}
+                        <circle cx="25" cy="25" r="23" fill="white" stroke="#333" strokeWidth="2"/>
+                        {/* Zwarte vlakken */}
+                        <path d="M25 2 L30 12 L25 18 L20 12 Z" fill="#333"/>
+                        <path d="M48 25 L38 30 L38 20 Z" fill="#333"/>
+                        <path d="M2 25 L12 20 L12 30 Z" fill="#333"/>
+                        <path d="M15 45 L20 38 L25 42 L30 38 L35 45 Z" fill="#333"/>
+                        {/* JIJ tekst */}
+                        <text x="25" y="29" textAnchor="middle" fill="#ef4444" fontSize="10" fontWeight="bold">JIJ</text>
                     </svg>
                 </div>
             </div>
         );
     }
 
-    // Render een shirt
+    // Render een shirt in de juiste kleur
     const colors = shirtColors[type as PlayerColor];
     return (
         <div
@@ -130,14 +130,34 @@ const DraggableUserToken = ({ x, y, type }: { x: number, y: number, type: Dragga
             {...attributes}
             className="touch-none cursor-move"
         >
-            <div style={{ transform: 'translate(-50%, -50%)' }} className="relative">
-                {/* Rode cirkel met JIJ als basis */}
-                <div className="w-12 h-12 bg-red-500 border-4 border-red-700 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                    <span className="font-bold text-white text-xs">JIJ</span>
-                </div>
-                {/* Klein shirtje als indicator */}
-                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.fill, border: `2px solid ${colors.stroke}` }}>
-                </div>
+            <div style={{ transform: 'translate(-50%, -50%)' }} className="relative animate-pulse">
+                <svg viewBox="0 0 40 44" className="w-12 h-14 drop-shadow-lg">
+                    {/* Shirt body */}
+                    <path
+                        d="M8 12 L2 8 L6 2 L14 6 L16 4 L24 4 L26 6 L34 2 L38 8 L32 12 L32 42 L8 42 Z"
+                        fill={colors.fill}
+                        stroke={colors.stroke}
+                        strokeWidth="2"
+                    />
+                    {/* Kraag */}
+                    <path
+                        d="M16 4 Q20 8 24 4"
+                        fill="none"
+                        stroke={colors.stroke}
+                        strokeWidth="1.5"
+                    />
+                    {/* JIJ tekst */}
+                    <text
+                        x="20"
+                        y="28"
+                        textAnchor="middle"
+                        fill={colors.text}
+                        fontSize="11"
+                        fontWeight="bold"
+                    >
+                        JIJ
+                    </text>
+                </svg>
             </div>
         </div>
     );
