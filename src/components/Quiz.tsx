@@ -254,7 +254,7 @@ export const Quiz: React.FC = () => {
                            {feedback === 'fail' && (
                               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50">
                                   <div className="bg-amber-100 text-amber-900 px-6 py-4 rounded-2xl font-bold shadow-lg flex flex-col items-center gap-2 animate-bounce">
-                                      <span className="text-5xl">🥜🍞</span>
+                                      <img src="/pindakaas.png" alt="Boterham met pindakaas" className="w-24 h-20 object-contain" />
                                       Helaas pindakaas!
                                   </div>
                               </div>
