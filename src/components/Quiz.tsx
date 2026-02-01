@@ -6,7 +6,7 @@ import { BallToken } from './BallToken';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import { useDraggable } from '@dnd-kit/core';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, CheckCircle, XCircle, Volume2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Volume2 } from 'lucide-react';
 import { playElevenLabsAudio, isElevenLabsAvailable } from '../utils/elevenlabs';
 
 // Speel opgenomen audio af

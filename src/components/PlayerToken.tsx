@@ -68,7 +68,7 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({ player, style, isDragg
         transform: 'translate(-50%, -50%)',
       } : style}
     >
-      <ShirtIcon color={player.color} number={player.number} />
+      <ShirtIcon color={player.color} number={player.number ?? 0} />
     </div>
   );
 };
