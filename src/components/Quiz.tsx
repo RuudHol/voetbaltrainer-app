@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getSituations } from '../utils/storage';
-import { Situation } from '../types';
+import { Situation, DraggableType, PlayerColor } from '../types';
 import { SoccerField } from './SoccerField';
 import { BallToken } from './BallToken';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
@@ -64,7 +64,16 @@ const playQuestion = async (situation: Situation) => {
     }
 };
 
-const UserPlayerToken = ({ x, y }: { x: number, y: number }) => {
+// Kleuren voor de shirts (zelfde als PlayerToken)
+const shirtColors: Record<PlayerColor, { fill: string; stroke: string; text: string }> = {
+  keeper1: { fill: '#22c55e', stroke: '#15803d', text: 'white' },
+  team1: { fill: '#ef4444', stroke: '#b91c1c', text: 'white' },
+  team2: { fill: '#3b82f6', stroke: '#1d4ed8', text: 'white' },
+  keeper2: { fill: '#facc15', stroke: '#ca8a04', text: 'black' },
+};
+
+// Draggable token dat shirt of bal toont op basis van type
+const DraggableUserToken = ({ x, y, type }: { x: number, y: number, type: DraggableType }) => {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: 'user-player',
     });
@@ -74,6 +83,40 @@ const UserPlayerToken = ({ x, y }: { x: number, y: number }) => {
         zIndex: 100,
     } : undefined;
 
+    // Render een bal
+    if (type === 'ball') {
+        return (
+            <div
+                ref={setNodeRef}
+                style={{
+                    ...style,
+                    position: 'absolute',
+                    left: `${x}%`,
+                    top: `${y}%`,
+                }}
+                {...listeners}
+                {...attributes}
+                className="touch-none cursor-move"
+            >
+                <div style={{ transform: 'translate(-50%, -50%)' }} className="relative">
+                    <div className="w-10 h-10 bg-white border-4 border-red-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                        <span className="font-bold text-red-600 text-xs">JIJ</span>
+                    </div>
+                    {/* Voetbal patroon */}
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30" viewBox="0 0 40 40">
+                        <circle cx="20" cy="8" r="4" fill="black"/>
+                        <circle cx="8" cy="20" r="4" fill="black"/>
+                        <circle cx="32" cy="20" r="4" fill="black"/>
+                        <circle cx="14" cy="32" r="4" fill="black"/>
+                        <circle cx="26" cy="32" r="4" fill="black"/>
+                    </svg>
+                </div>
+            </div>
+        );
+    }
+
+    // Render een shirt
+    const colors = shirtColors[type as PlayerColor];
     return (
         <div
             ref={setNodeRef}
@@ -87,11 +130,15 @@ const UserPlayerToken = ({ x, y }: { x: number, y: number }) => {
             {...attributes}
             className="touch-none cursor-move"
         >
-             <div style={{ transform: 'translate(-50%, -50%)' }} className="relative">
-                <div className="w-12 h-12 bg-orange-400 border-4 border-orange-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                    <span className="font-bold text-orange-900 text-xs">JIJ</span>
+            <div style={{ transform: 'translate(-50%, -50%)' }} className="relative">
+                {/* Rode cirkel met JIJ als basis */}
+                <div className="w-12 h-12 bg-red-500 border-4 border-red-700 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                    <span className="font-bold text-white text-xs">JIJ</span>
                 </div>
-             </div>
+                {/* Klein shirtje als indicator */}
+                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.fill, border: `2px solid ${colors.stroke}` }}>
+                </div>
+            </div>
         </div>
     );
 };
@@ -239,7 +286,7 @@ export const Quiz: React.FC = () => {
                           )}
                           
                           {feedback !== 'success' && (
-                              <UserPlayerToken x={userPos.x} y={userPos.y} />
+                              <DraggableUserToken x={userPos.x} y={userPos.y} type={currentSituation.draggableType || 'team1'} />
                           )}
                           
                           {/* Feedback Overlay */}
@@ -264,7 +311,7 @@ export const Quiz: React.FC = () => {
               </div>
               
               <p className="text-center text-gray-500 mt-3 text-sm">
-                  Sleep het oranje bolletje (JIJ) naar de juiste plek!
+                  Sleep de rode cirkel (JIJ) naar de juiste plek!
               </p>
           </div>
       </div>

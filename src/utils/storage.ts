@@ -32,6 +32,7 @@ export const getSituations = async (): Promise<(Situation & { ownerCode?: string
     players: row.players,
     ball: row.ball,
     targetArea: row.target_area,
+    draggableType: row.draggable_type || 'team1',
     ownerCode: row.owner_code,
   }));
 };
@@ -49,6 +50,7 @@ export const saveSituation = async (situation: Situation): Promise<void> => {
       players: situation.players,
       ball: situation.ball,
       target_area: situation.targetArea,
+      draggable_type: situation.draggableType || 'team1',
       owner_code: trainerCode || null,
     });
 
