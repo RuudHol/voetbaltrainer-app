@@ -6,36 +6,69 @@ interface PlayerTokenProps {
   player: Player;
   isDraggable?: boolean;
   style?: React.CSSProperties;
-  // Eventuele andere props voor dnd-kit later
+  /** Als true, positioneert PlayerToken zichzelf. Als false, doet de parent dat. */
+  selfPositioned?: boolean;
 }
 
-const colorClasses: Record<PlayerColor, string> = {
-  keeper1: 'bg-green-500 border-green-700 text-white', // Keeper team 1 (groen)
-  team1: 'bg-red-500 border-red-700 text-white',       // Spelers team 1 (rood)
-  team2: 'bg-blue-500 border-blue-700 text-white',     // Spelers team 2 (blauw)
-  keeper2: 'bg-yellow-400 border-yellow-600 text-black', // Keeper team 2 (geel)
+// Kleuren voor de shirts
+const shirtColors: Record<PlayerColor, { fill: string; stroke: string; text: string }> = {
+  keeper1: { fill: '#22c55e', stroke: '#15803d', text: 'white' },   // Groen
+  team1: { fill: '#ef4444', stroke: '#b91c1c', text: 'white' },     // Rood
+  team2: { fill: '#3b82f6', stroke: '#1d4ed8', text: 'white' },     // Blauw
+  keeper2: { fill: '#facc15', stroke: '#ca8a04', text: 'black' },   // Geel
 };
 
-export const PlayerToken: React.FC<PlayerTokenProps> = ({ player, style, isDraggable }) => {
+// SVG voetbalshirt component
+const ShirtIcon: React.FC<{ color: PlayerColor; number: number }> = ({ color, number }) => {
+  const colors = shirtColors[color];
+  return (
+    <svg viewBox="0 0 40 44" className="w-7 h-8 drop-shadow-md">
+      {/* Shirt body */}
+      <path
+        d="M8 12 L2 8 L6 2 L14 6 L16 4 L24 4 L26 6 L34 2 L38 8 L32 12 L32 42 L8 42 Z"
+        fill={colors.fill}
+        stroke={colors.stroke}
+        strokeWidth="2"
+      />
+      {/* Kraag */}
+      <path
+        d="M16 4 Q20 8 24 4"
+        fill="none"
+        stroke={colors.stroke}
+        strokeWidth="1.5"
+      />
+      {/* Nummer */}
+      <text
+        x="20"
+        y="28"
+        textAnchor="middle"
+        fill={colors.text}
+        fontSize="14"
+        fontWeight="bold"
+        fontFamily="Arial, sans-serif"
+      >
+        {number}
+      </text>
+    </svg>
+  );
+};
+
+export const PlayerToken: React.FC<PlayerTokenProps> = ({ player, style, isDraggable, selfPositioned = true }) => {
   return (
     <div
       className={clsx(
-        "w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm shadow-md select-none",
-        colorClasses[player.color],
+        "select-none",
         isDraggable && "cursor-move hover:scale-110 transition-transform"
       )}
-      style={{
+      style={selfPositioned ? {
         ...style,
-        // We positioneren absoluut als x/y gegeven zijn en we in een container zitten die relative is
-        // Maar voor dnd-kit gebruiken we vaak transform.
-        // Laten we aannemen dat de parent de positionering regelt via style prop of absolute positie hier als fallback
         position: 'absolute',
         left: `${player.x}%`,
         top: `${player.y}%`,
-        transform: 'translate(-50%, -50%)', // Zodat x,y het midden is
-      }}
+        transform: 'translate(-50%, -50%)',
+      } : style}
     >
-      {player.number}
+      <ShirtIcon color={player.color} number={player.number} />
     </div>
   );
 };

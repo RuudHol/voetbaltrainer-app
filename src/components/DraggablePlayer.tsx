@@ -28,15 +28,13 @@ export const DraggablePlayer: React.FC<DraggablePlayerProps> = ({ player }) => {
         position: 'absolute',
         left: `${player.x}%`,
         top: `${player.y}%`,
+        transform: 'translate(-50%, -50%)',
       }}
       {...listeners} 
       {...attributes} 
       className="touch-none cursor-move"
     >
-        {/* We centeren het token ten opzichte van de x/y coördinaat */}
-        <div style={{ transform: 'translate(-50%, -50%)' }}>
-             <PlayerToken player={player} isDraggable />
-        </div>
+      <PlayerToken player={player} isDraggable selfPositioned={false} />
     </div>
   );
 };

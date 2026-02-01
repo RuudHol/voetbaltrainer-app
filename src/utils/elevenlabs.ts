@@ -1,68 +1,44 @@
 // ElevenLabs Text-to-Speech API
 // Documentatie: https://elevenlabs.io/docs/api-reference
 
-import { supabase } from './supabase';
-import { getTrainerCode } from './storage';
+// API key wordt ALLEEN lokaal opgeslagen (veiliger - anderen kunnen het niet zien)
+const ELEVENLABS_KEY_STORAGE = 'elevenlabs-api-key';
+const ELEVENLABS_VOICE_STORAGE = 'elevenlabs-voice-id';
 
-// Lokale cache voor snelle toegang (wordt gesynchroniseerd met Supabase)
-let cachedApiKey = '';
-let cachedVoiceId = '';
-
-// Laad instellingen uit Supabase (op basis van trainer code)
+// Laad instellingen uit localStorage (blijft lokaal op dit device)
 export const loadSettingsFromSupabase = async (): Promise<void> => {
-  const trainerCode = getTrainerCode();
-  if (!trainerCode) return;
-
-  try {
-    const { data, error } = await supabase
-      .from('trainer_settings')
-      .select('elevenlabs_api_key, elevenlabs_voice_id')
-      .eq('trainer_code', trainerCode)
-      .single();
-
-    if (!error && data) {
-      cachedApiKey = data.elevenlabs_api_key || '';
-      cachedVoiceId = data.elevenlabs_voice_id || '';
-    }
-  } catch {
-    // Tabel bestaat mogelijk nog niet, negeer fout
-  }
+  // Backwards compatible functienaam, maar laadt nu uit localStorage
+  // Niks te doen - getters lezen direct uit localStorage
 };
 
-// Sla instellingen op in Supabase
+// Niet meer nodig - alles is lokaal
 export const saveSettingsToSupabase = async (): Promise<void> => {
-  const trainerCode = getTrainerCode();
-  if (!trainerCode) return;
-
-  try {
-    await supabase
-      .from('trainer_settings')
-      .upsert({
-        trainer_code: trainerCode,
-        elevenlabs_api_key: cachedApiKey,
-        elevenlabs_voice_id: cachedVoiceId,
-      });
-  } catch {
-    // Tabel bestaat mogelijk nog niet, negeer fout
-  }
+  // Backwards compatible functienaam, maar slaat nu lokaal op
+  // Niks te doen - setters schrijven direct naar localStorage
 };
 
 export const getElevenLabsApiKey = (): string => {
-  return cachedApiKey;
+  return localStorage.getItem(ELEVENLABS_KEY_STORAGE) || '';
 };
 
 export const setElevenLabsApiKey = async (key: string): Promise<void> => {
-  cachedApiKey = key;
-  await saveSettingsToSupabase();
+  if (key) {
+    localStorage.setItem(ELEVENLABS_KEY_STORAGE, key);
+  } else {
+    localStorage.removeItem(ELEVENLABS_KEY_STORAGE);
+  }
 };
 
 export const getSelectedVoiceId = (): string => {
-  return cachedVoiceId;
+  return localStorage.getItem(ELEVENLABS_VOICE_STORAGE) || '';
 };
 
 export const setSelectedVoiceId = async (id: string): Promise<void> => {
-  cachedVoiceId = id;
-  await saveSettingsToSupabase();
+  if (id) {
+    localStorage.setItem(ELEVENLABS_VOICE_STORAGE, id);
+  } else {
+    localStorage.removeItem(ELEVENLABS_VOICE_STORAGE);
+  }
 };
 
 // Haal beschikbare stemmen op van ElevenLabs

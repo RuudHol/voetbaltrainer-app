@@ -14,7 +14,7 @@ export const Editor: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [ball, setBall] = useState<Ball | null>(null);
-  const [targetArea, setTargetArea] = useState<TargetArea>({ x: 50, y: 50, radius: 10 });
+  const [targetArea, setTargetArea] = useState<TargetArea>({ x: 50, y: 50, radius: 5 });
   const [question, setQuestion] = useState('');
   const [questionAudio, setQuestionAudio] = useState<string | undefined>(undefined);
   const [trainerCode, setTrainerCodeState] = useState('');
@@ -102,7 +102,7 @@ export const Editor: React.FC = () => {
     setBall(null);
     setQuestion('');
     setQuestionAudio(undefined);
-    setTargetArea({ x: 50, y: 50, radius: 10 });
+    setTargetArea({ x: 50, y: 50, radius: 5 });
     setEditingId(null);
   };
 

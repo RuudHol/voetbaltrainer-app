@@ -164,7 +164,7 @@ export const Quiz: React.FC = () => {
           });
       } else {
           setFeedback('fail');
-          speakText('Probeer nog eens!');
+          speakText('Helaas pindakaas!');
       }
   };
 
@@ -253,9 +253,9 @@ export const Quiz: React.FC = () => {
                           
                            {feedback === 'fail' && (
                               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50">
-                                  <div className="bg-red-100 text-red-800 px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 animate-bounce">
-                                      <XCircle size={24} />
-                                      Probeer nog eens!
+                                  <div className="bg-amber-100 text-amber-900 px-6 py-4 rounded-2xl font-bold shadow-lg flex flex-col items-center gap-2 animate-bounce">
+                                      <span className="text-5xl">🥜🍞</span>
+                                      Helaas pindakaas!
                                   </div>
                               </div>
                           )}
