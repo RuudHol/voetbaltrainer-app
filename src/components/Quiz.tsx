@@ -85,7 +85,7 @@ const getTargetSize = (target: TargetArea) => {
 // Display voor doelvak in Quiz (niet draggable)
 const TargetAreaDisplay = ({ target, fieldRef }: { target: TargetArea, fieldRef?: React.RefObject<HTMLDivElement | null> }) => {
     const { width, height } = getTargetSize(target);
-    const isCircle = target.shape === 'circle' || Math.abs(width - height) < 0.5;
+    const isCircle = target.shape === 'circle';
     
     // Bereken pixels op basis van parent (veld) grootte
     const [size, setSize] = useState({ w: 80, h: 80 });
@@ -328,7 +328,7 @@ export const Quiz: React.FC = () => {
       
       // Haal width/height op (met backwards compatibility)
       const { width, height } = getTargetSize(target);
-      const isCircle = target.shape === 'circle' || Math.abs(width - height) < 0.5;
+      const isCircle = target.shape === 'circle';
       
       // Bereken grootte in pixels
       const widthPx = (width / 100) * rect.width;

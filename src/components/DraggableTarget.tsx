@@ -38,7 +38,8 @@ export const DraggableTarget: React.FC<DraggableTargetProps> = ({
   const startPos = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
   const { width, height } = getTargetSize(target);
-  const isCircle = target.shape === 'circle' || Math.abs(width - height) < 0.5;
+  // Alleen cirkel als expliciet zo ingesteld - niet op basis van verhouding
+  const isCircle = target.shape === 'circle';
 
   // Meet het veld om pixels te kunnen berekenen
   useEffect(() => {
