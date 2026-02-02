@@ -164,141 +164,150 @@ export const Editor: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
       {/* Trainer code sectie */}
-      <div className="bg-yellow-50 p-3 rounded-xl border border-yellow-200 flex items-center gap-3">
-        <Key size={20} className="text-yellow-600" />
+      <div className="glass rounded-2xl p-4 shadow-playful flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+          <Key size={24} className="text-white" />
+        </div>
         <div className="flex-1">
-          <label className="block text-sm font-medium text-yellow-800">Trainer code (geheim!)</label>
+          <label className="block text-sm font-bold text-amber-800 mb-1">Trainer code (geheim!) 🔐</label>
           <input 
             type="password"
             value={trainerCode}
             onChange={(e) => handleTrainerCodeChange(e.target.value)}
             placeholder="Vul je geheime code in..."
-            className="w-full mt-1 p-2 border border-yellow-300 rounded-md text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            className="w-full p-3 border-2 border-amber-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white/50"
           />
         </div>
-        <div className="text-xs text-yellow-600 max-w-32">
-          Met deze code kun je jouw oefeningen verwijderen
+        <div className="text-xs text-amber-700 bg-amber-100 px-3 py-2 rounded-lg max-w-48">
+          💡 Met deze code kun je jouw oefeningen verwijderen
         </div>
       </div>
 
       {/* Editor sectie */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-green-100">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-green-800">
-            {editingId ? 'Oefening bewerken' : 'Nieuwe oefening'}
+      <div className="glass rounded-2xl p-5 shadow-playful">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-2xl font-bold text-gradient flex items-center gap-2" style={{ fontFamily: 'Fredoka, sans-serif' }}>
+            {editingId ? '✏️ Oefening bewerken' : '✨ Nieuwe oefening'}
           </h2>
           {editingId && (
             <button 
               onClick={clearAll}
-              className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1"
+              className="btn-bounce text-gray-500 hover:text-red-500 text-sm flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
             >
               <X size={16} /> Annuleren
             </button>
           )}
         </div>
         
-        <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Vraag voor de speler:</label>
+        {/* Vraag input */}
+        <div className="mb-5">
+            <label className="block text-sm font-bold text-gray-700 mb-2">📝 Vraag voor de speler:</label>
             <input 
                 type="text" 
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 placeholder="Bijv: Waar moet je staan als de keeper de bal heeft?"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-transparent text-lg"
             />
         </div>
         
-        <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Spreek de vraag in (optioneel - beter voor kinderen!):</label>
+        {/* Audio recorder */}
+        <div className="mb-5">
+            <label className="block text-sm font-bold text-gray-700 mb-2">🎤 Spreek de vraag in (optioneel - beter voor kinderen!):</label>
             <AudioRecorder 
                 audioData={questionAudio}
                 onAudioChange={setQuestionAudio}
             />
         </div>
 
-        <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Wat moet de speler verslepen?</label>
+        {/* Draggable type selector */}
+        <div className="mb-5 p-4 bg-gray-50 rounded-xl">
+            <label className="block text-sm font-bold text-gray-700 mb-3">🎯 Wat moet de speler verslepen?</label>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => setDraggableType('keeper1')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${draggableType === 'keeper1' ? 'bg-green-500 text-white ring-2 ring-green-600' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
+                className={`btn-bounce px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${draggableType === 'keeper1' ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg scale-105' : 'bg-white text-green-700 hover:bg-green-50 border-2 border-green-200'}`}
               >
                 🟢 Keeper 1
               </button>
               <button
                 type="button"
                 onClick={() => setDraggableType('team1')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${draggableType === 'team1' ? 'bg-red-500 text-white ring-2 ring-red-600' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
+                className={`btn-bounce px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${draggableType === 'team1' ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg scale-105' : 'bg-white text-red-700 hover:bg-red-50 border-2 border-red-200'}`}
               >
                 🔴 Team 1
               </button>
               <button
                 type="button"
                 onClick={() => setDraggableType('team2')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${draggableType === 'team2' ? 'bg-blue-500 text-white ring-2 ring-blue-600' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}`}
+                className={`btn-bounce px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${draggableType === 'team2' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-105' : 'bg-white text-blue-700 hover:bg-blue-50 border-2 border-blue-200'}`}
               >
                 🔵 Team 2
               </button>
               <button
                 type="button"
                 onClick={() => setDraggableType('keeper2')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${draggableType === 'keeper2' ? 'bg-yellow-500 text-white ring-2 ring-yellow-600' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}`}
+                className={`btn-bounce px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${draggableType === 'keeper2' ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 shadow-lg scale-105' : 'bg-white text-yellow-700 hover:bg-yellow-50 border-2 border-yellow-200'}`}
               >
                 🟡 Keeper 2
               </button>
               <button
                 type="button"
                 onClick={() => setDraggableType('ball')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${draggableType === 'ball' ? 'bg-gray-700 text-white ring-2 ring-gray-800' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                className={`btn-bounce px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${draggableType === 'ball' ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'}`}
               >
                 ⚽ Bal
               </button>
             </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          {/* Team 1 */}
-          <button onClick={() => addPlayer('keeper1')} className="flex items-center gap-2 px-3 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors text-sm">
-            <Plus size={16} /> Keeper 1
-          </button>
-          <button onClick={() => addPlayer('team1')} className="flex items-center gap-2 px-3 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors text-sm">
-            <Plus size={16} /> Team 1
-          </button>
-          
-          <div className="w-px bg-gray-300 mx-1" />
-          
-          {/* Team 2 */}
-          <button onClick={() => addPlayer('team2')} className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors text-sm">
-            <Plus size={16} /> Team 2
-          </button>
-          <button onClick={() => addPlayer('keeper2')} className="flex items-center gap-2 px-3 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors text-sm">
-            <Plus size={16} /> Keeper 2
-          </button>
+        {/* Spelers toevoegen toolbar */}
+        <div className="mb-5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+            <label className="block text-sm font-bold text-gray-700 mb-3">👥 Voeg spelers toe op het veld:</label>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => addPlayer('keeper1')} className="btn-bounce flex items-center gap-2 px-4 py-2.5 bg-white text-green-700 rounded-xl hover:bg-green-100 transition-colors text-sm font-bold border-2 border-green-200">
+                <Plus size={16} /> Keeper 1
+              </button>
+              <button onClick={() => addPlayer('team1')} className="btn-bounce flex items-center gap-2 px-4 py-2.5 bg-white text-red-700 rounded-xl hover:bg-red-100 transition-colors text-sm font-bold border-2 border-red-200">
+                <Plus size={16} /> Team 1
+              </button>
+              
+              <div className="w-px bg-gray-300 mx-1 hidden sm:block" />
+              
+              <button onClick={() => addPlayer('team2')} className="btn-bounce flex items-center gap-2 px-4 py-2.5 bg-white text-blue-700 rounded-xl hover:bg-blue-100 transition-colors text-sm font-bold border-2 border-blue-200">
+                <Plus size={16} /> Team 2
+              </button>
+              <button onClick={() => addPlayer('keeper2')} className="btn-bounce flex items-center gap-2 px-4 py-2.5 bg-white text-yellow-700 rounded-xl hover:bg-yellow-100 transition-colors text-sm font-bold border-2 border-yellow-200">
+                <Plus size={16} /> Keeper 2
+              </button>
 
-          <div className="w-px bg-gray-300 mx-1" />
-          
-          {/* Bal */}
-          <button 
-            onClick={addBall} 
-            disabled={ball !== null}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${ball ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-          >
-            <Plus size={16} /> Bal
-          </button>
-          
+              <div className="w-px bg-gray-300 mx-1 hidden sm:block" />
+              
+              <button 
+                onClick={addBall} 
+                disabled={ball !== null}
+                className={`btn-bounce flex items-center gap-2 px-4 py-2.5 rounded-xl transition-colors text-sm font-bold ${ball ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-200'}`}
+              >
+                <Plus size={16} /> Bal
+              </button>
+            </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-3 mb-5">
           <div className="flex-1" />
-          
-          <button onClick={clearAll} className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm">
-            <Trash2 size={16} /> Wis
+          <button onClick={clearAll} className="btn-bounce flex items-center gap-2 px-5 py-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors font-bold">
+            <Trash2 size={18} /> Wis alles
           </button>
-          <button onClick={handleSave} className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-bold text-sm">
-            <Save size={16} /> {editingId ? 'Bijwerken' : 'Opslaan'}
+          <button onClick={handleSave} className="btn-bounce flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-colors shadow-lg font-bold">
+            <Save size={18} /> {editingId ? 'Bijwerken' : 'Opslaan'}
           </button>
         </div>
 
+        {/* Voetbalveld */}
         <div ref={fieldRef} className="relative touch-none"> 
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <SoccerField>
@@ -311,52 +320,62 @@ export const Editor: React.FC = () => {
             </DndContext>
         </div>
         
-        <p className="text-sm text-gray-500 mt-2 text-center">
-            Sleep de spelers, bal en het <span className="text-yellow-600 font-bold">gele doelvak</span> naar de juiste posities.
+        <p className="text-center text-gray-500 mt-4 font-medium">
+            👆 Sleep de spelers, bal en het <span className="text-amber-600 font-bold">gele doelvak</span> naar de juiste posities
         </p>
       </div>
 
       {/* Overzicht van oefeningen */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-green-100">
-        <h2 className="text-xl font-bold text-green-800 mb-4">Opgeslagen oefeningen</h2>
+      <div className="glass rounded-2xl p-5 shadow-playful">
+        <h2 className="text-2xl font-bold text-gradient mb-5 flex items-center gap-2" style={{ fontFamily: 'Fredoka, sans-serif' }}>
+            📚 Opgeslagen oefeningen
+        </h2>
         
         {situations.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">Nog geen oefeningen opgeslagen.</p>
+          <div className="text-center py-8">
+            <div className="text-5xl mb-3">📝</div>
+            <p className="text-gray-500 font-medium">Nog geen oefeningen opgeslagen.</p>
+            <p className="text-sm text-gray-400 mt-1">Maak hierboven je eerste oefening!</p>
+          </div>
         ) : (
-          <div className="space-y-2">
-            {situations.map((s) => {
+          <div className="space-y-3">
+            {situations.map((s, index) => {
               const canDelete = !s.ownerCode || s.ownerCode === trainerCode;
               return (
                 <div 
                   key={s.id} 
-                  className={`flex items-center justify-between p-3 rounded-lg border ${editingId === s.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${editingId === s.id ? 'border-green-500 bg-green-50 shadow-md' : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`}
                 >
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-800">{s.question}</div>
-                    <div className="text-sm text-gray-500">
-                      {s.players.length} spelers {s.ball ? '+ bal' : ''}
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center text-white font-bold shadow-sm flex-shrink-0">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-gray-800 truncate">{s.question}</div>
+                    <div className="text-sm text-gray-500 flex items-center gap-2 flex-wrap">
+                      <span>{s.players.length} spelers</span>
+                      {s.ball && <span>+ bal</span>}
                       {s.ownerCode && (
-                        <span className={`ml-2 ${canDelete ? 'text-green-600' : 'text-yellow-600'}`}>
-                          {canDelete ? '• jouw oefening' : '• van iemand anders'}
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${canDelete ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {canDelete ? '✓ Jouw oefening' : '🔒 Van iemand anders'}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <button 
                       onClick={() => handleEdit(s)}
-                      className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                      className="btn-bounce p-2.5 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors"
                       title="Bewerken"
                     >
-                      <Edit2 size={18} />
+                      <Edit2 size={20} />
                     </button>
                     <button 
                       onClick={() => handleDelete(s.id)}
-                      className={`p-2 rounded-lg transition-colors ${canDelete ? 'text-red-600 hover:bg-red-100' : 'text-gray-300 cursor-not-allowed'}`}
+                      className={`btn-bounce p-2.5 rounded-xl transition-colors ${canDelete ? 'text-red-600 hover:bg-red-100' : 'text-gray-300 cursor-not-allowed'}`}
                       title={canDelete ? 'Verwijderen' : 'Niet jouw oefening'}
                       disabled={!canDelete}
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </div>

@@ -6,7 +6,7 @@ import { BallToken } from './BallToken';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import { useDraggable } from '@dnd-kit/core';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, CheckCircle, Volume2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Volume2, Star, Trophy, Target, Sparkles } from 'lucide-react';
 import { playElevenLabsAudio, isElevenLabsAvailable } from '../utils/elevenlabs';
 
 // Speel opgenomen audio af
@@ -163,11 +163,59 @@ const DraggableUserToken = ({ x, y, type }: { x: number, y: number, type: Dragga
     );
 };
 
+// Trigger awesome confetti burst
+const triggerSuccessConfetti = () => {
+    // Eerste burst
+    confetti({
+        particleCount: 80,
+        spread: 100,
+        origin: { y: 0.6, x: 0.5 },
+        colors: ['#22c55e', '#16a34a', '#fbbf24', '#f59e0b', '#ffffff'],
+    });
+    
+    // Zijkanten
+    setTimeout(() => {
+        confetti({
+            particleCount: 40,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0, y: 0.6 },
+            colors: ['#22c55e', '#fbbf24'],
+        });
+        confetti({
+            particleCount: 40,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1, y: 0.6 },
+            colors: ['#16a34a', '#f59e0b'],
+        });
+    }, 150);
+    
+    // Sterren
+    setTimeout(() => {
+        confetti({
+            particleCount: 30,
+            spread: 360,
+            ticks: 100,
+            gravity: 0.5,
+            decay: 0.94,
+            startVelocity: 20,
+            shapes: ['star'],
+            colors: ['#fbbf24', '#f59e0b'],
+            origin: { y: 0.5 },
+        });
+    }, 300);
+};
+
 export const Quiz: React.FC = () => {
   const [situations, setSituations] = useState<Situation[]>([]);
   const [currentSituation, setCurrentSituation] = useState<Situation | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [userPos, setUserPos] = useState({ x: 50, y: 90 });
   const [feedback, setFeedback] = useState<'none' | 'success' | 'fail'>('none');
+  const [score, setScore] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const [streak, setStreak] = useState(0);
   const fieldRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
@@ -185,7 +233,7 @@ export const Quiz: React.FC = () => {
 
   useEffect(() => {
       if (feedback === 'fail') {
-          const timer = setTimeout(() => setFeedback('none'), 2000);
+          const timer = setTimeout(() => setFeedback('none'), 2500);
           return () => clearTimeout(timer);
       }
   }, [feedback]);
@@ -223,47 +271,115 @@ export const Quiz: React.FC = () => {
 
       if (distance <= radiusPixels) {
           setFeedback('success');
+          setScore(prev => prev + 1);
+          setStreak(prev => prev + 1);
+          setAttempts(prev => prev + 1);
           speakText('Super goed!');
-          confetti({
-              particleCount: 100,
-              spread: 70,
-              origin: { y: 0.6 }
-          });
+          triggerSuccessConfetti();
       } else {
           setFeedback('fail');
+          setStreak(0);
+          setAttempts(prev => prev + 1);
           speakText('Helaas pindakaas!');
       }
   };
 
-  const selectSituation = (s: Situation) => {
+  const selectSituation = (s: Situation, index: number) => {
       setCurrentSituation(s);
+      setCurrentIndex(index);
       setUserPos({ x: 50, y: 90 });
       setFeedback('none');
   };
 
+  const goToNextExercise = () => {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < situations.length) {
+          selectSituation(situations[nextIndex], nextIndex);
+      } else {
+          // Terug naar overzicht
+          setCurrentSituation(null);
+      }
+  };
+
   if (!currentSituation) {
       return (
-          <div className="w-full max-w-md mx-auto">
-              <h2 className="text-2xl font-bold text-green-900 mb-6 text-center">Kies een oefening</h2>
+          <div className="w-full max-w-2xl mx-auto">
+              {/* Score overzicht */}
+              {attempts > 0 && (
+                  <div className="glass rounded-2xl p-6 mb-6 shadow-playful animate-pop-in">
+                      <div className="flex items-center justify-center gap-8">
+                          <div className="text-center">
+                              <div className="flex items-center justify-center gap-2 text-amber-500 mb-1">
+                                  <Trophy size={24} />
+                                  <span className="text-3xl font-bold">{score}</span>
+                              </div>
+                              <p className="text-sm text-gray-600 font-medium">Goed</p>
+                          </div>
+                          <div className="w-px h-12 bg-gray-200" />
+                          <div className="text-center">
+                              <div className="flex items-center justify-center gap-2 text-green-500 mb-1">
+                                  <Target size={24} />
+                                  <span className="text-3xl font-bold">{attempts > 0 ? Math.round((score / attempts) * 100) : 0}%</span>
+                              </div>
+                              <p className="text-sm text-gray-600 font-medium">Score</p>
+                          </div>
+                          {streak >= 3 && (
+                              <>
+                                  <div className="w-px h-12 bg-gray-200" />
+                                  <div className="text-center">
+                                      <div className="flex items-center justify-center gap-2 text-orange-500 mb-1">
+                                          <Sparkles size={24} />
+                                          <span className="text-3xl font-bold">{streak}x</span>
+                                      </div>
+                                      <p className="text-sm text-gray-600 font-medium">Streak!</p>
+                                  </div>
+                              </>
+                          )}
+                      </div>
+                  </div>
+              )}
+
+              {/* Titel */}
+              <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-gradient mb-2" style={{ fontFamily: 'Fredoka, sans-serif' }}>
+                      Kies een oefening
+                  </h2>
+                  <p className="text-green-700">Laat zien waar jij moet staan! 🎯</p>
+              </div>
+
               {situations.length === 0 ? (
-                  <div className="bg-white p-6 rounded-xl text-center text-gray-500 shadow-sm">
-                      Nog geen oefeningen gemaakt in de Editor!
+                  <div className="glass rounded-2xl p-8 text-center shadow-playful">
+                      <div className="text-6xl mb-4">📝</div>
+                      <p className="text-gray-600 font-medium">Nog geen oefeningen gemaakt!</p>
+                      <p className="text-sm text-gray-500 mt-2">Ga naar "Trainer" om oefeningen te maken.</p>
                   </div>
               ) : (
-                  <div className="grid gap-3">
-                      {situations.map(s => (
+                  <div className="grid gap-4">
+                      {situations.map((s, index) => (
                           <button 
                             key={s.id}
-                            onClick={() => selectSituation(s)}
-                            className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500 text-left hover:shadow-md transition-shadow"
+                            onClick={() => selectSituation(s, index)}
+                            className="glass rounded-2xl p-5 text-left btn-bounce shadow-playful group"
                           >
-                              <div className="flex items-center gap-2">
-                                  <div className="font-bold text-lg text-gray-800 flex-1">{s.question}</div>
-                                  {s.questionAudio && (
-                                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">🎤 Audio</span>
-                                  )}
+                              <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-110 transition-transform">
+                                      {index + 1}
+                                  </div>
+                                  <div className="flex-1">
+                                      <div className="font-bold text-lg text-gray-800 group-hover:text-green-700 transition-colors">
+                                          {s.question}
+                                      </div>
+                                      <div className="flex items-center gap-3 mt-1">
+                                          <span className="text-sm text-gray-500">{s.players.length} spelers</span>
+                                          {s.questionAudio && (
+                                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">🎤 Audio</span>
+                                          )}
+                                      </div>
+                                  </div>
+                                  <div className="text-green-500 group-hover:translate-x-1 transition-transform">
+                                      <ArrowLeft size={24} className="rotate-180" />
+                                  </div>
                               </div>
-                              <div className="text-sm text-gray-500">{s.players.length} spelers</div>
                           </button>
                       ))}
                   </div>
@@ -274,26 +390,54 @@ export const Quiz: React.FC = () => {
 
   return (
       <div className="w-full max-w-4xl mx-auto flex flex-col gap-4">
-          <button 
-            onClick={() => {
-                window.speechSynthesis.cancel();
-                setCurrentSituation(null);
-            }}
-            className="self-start flex items-center text-gray-600 hover:text-green-700 font-medium"
-          >
-              <ArrowLeft size={20} className="mr-1" /> Terug
-          </button>
+          {/* Top bar met navigatie en score */}
+          <div className="flex items-center justify-between">
+              <button 
+                onClick={() => {
+                    window.speechSynthesis.cancel();
+                    setCurrentSituation(null);
+                }}
+                className="btn-bounce flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur rounded-xl text-gray-600 hover:text-green-700 font-medium shadow-sm"
+              >
+                  <ArrowLeft size={20} /> Terug
+              </button>
+              
+              {/* Score indicator */}
+              <div className="flex items-center gap-4">
+                  {streak >= 2 && (
+                      <div className="flex items-center gap-1 bg-orange-100 text-orange-600 px-3 py-1.5 rounded-full font-bold animate-pulse">
+                          <Sparkles size={16} />
+                          {streak}x streak!
+                      </div>
+                  )}
+                  <div className="flex items-center gap-1 bg-amber-100 text-amber-600 px-3 py-1.5 rounded-full font-bold">
+                      <Star size={16} fill="currentColor" />
+                      {score} / {attempts}
+                  </div>
+              </div>
+          </div>
 
-          <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-green-100">
+          {/* Progress bar */}
+          <div className="w-full bg-white/50 rounded-full h-2 overflow-hidden">
+              <div 
+                  className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500"
+                  style={{ width: `${((currentIndex + 1) / situations.length) * 100}%` }}
+              />
+          </div>
+
+          {/* Main quiz card */}
+          <div className="glass rounded-2xl p-5 shadow-playful">
               {/* Vraag met audio knop */}
-              <div className="flex items-center justify-center gap-3 mb-4">
-                  <h2 className="text-2xl font-bold text-green-900 text-center">{currentSituation.question}</h2>
+              <div className="flex items-center justify-center gap-3 mb-5">
+                  <h2 className="text-2xl font-bold text-gray-800 text-center" style={{ fontFamily: 'Fredoka, sans-serif' }}>
+                      {currentSituation.question}
+                  </h2>
                   <button 
                     onClick={() => playQuestion(currentSituation)}
-                    className="p-2 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
+                    className="btn-bounce p-3 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-xl shadow-md hover:shadow-lg transition-shadow"
                     title="Lees voor"
                   >
-                      <Volume2 size={24} />
+                      <Volume2 size={22} />
                   </button>
               </div>
               
@@ -309,20 +453,34 @@ export const Quiz: React.FC = () => {
                               <DraggableUserToken x={userPos.x} y={userPos.y} type={currentSituation.draggableType || 'team1'} />
                           )}
                           
-                          {/* Feedback Overlay */}
+                          {/* Success Overlay */}
                           {feedback === 'success' && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg z-50">
-                                  <div className="bg-white p-6 rounded-full shadow-2xl transform scale-110">
-                                      <CheckCircle size={80} className="text-green-500" />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl z-50 animate-pop-in">
+                                  <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
+                                      <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center animate-bounce">
+                                          <CheckCircle size={50} className="text-white" />
+                                      </div>
+                                      <div className="text-center">
+                                          <p className="text-2xl font-bold text-green-600" style={{ fontFamily: 'Fredoka, sans-serif' }}>Super goed!</p>
+                                          <p className="text-gray-500 mt-1">Je staat op de juiste plek! ⭐</p>
+                                      </div>
+                                      <button 
+                                          onClick={goToNextExercise}
+                                          className="btn-bounce mt-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-shadow"
+                                      >
+                                          {currentIndex + 1 < situations.length ? 'Volgende oefening →' : 'Bekijk resultaten'}
+                                      </button>
                                   </div>
                               </div>
                           )}
                           
-                           {feedback === 'fail' && (
-                              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50">
-                                  <div className="bg-amber-100 text-amber-900 px-6 py-4 rounded-2xl font-bold shadow-lg flex flex-col items-center gap-2 animate-bounce">
-                                      <img src="/pindakaas.png" alt="Boterham met pindakaas" className="w-24 h-20 object-contain" />
-                                      Helaas pindakaas!
+                          {/* Fail Overlay */}
+                          {feedback === 'fail' && (
+                              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 animate-pop-in">
+                                  <div className="bg-gradient-to-br from-amber-50 to-orange-100 text-amber-900 px-8 py-6 rounded-3xl font-bold shadow-2xl flex flex-col items-center gap-3 border-2 border-amber-200">
+                                      <img src="/pindakaas.png" alt="Boterham met pindakaas" className="w-28 h-24 object-contain drop-shadow-md" />
+                                      <p className="text-xl" style={{ fontFamily: 'Fredoka, sans-serif' }}>Helaas pindakaas!</p>
+                                      <p className="text-sm text-amber-700 font-normal">Probeer het nog eens!</p>
                                   </div>
                               </div>
                           )}
@@ -330,8 +488,8 @@ export const Quiz: React.FC = () => {
                   </DndContext>
               </div>
               
-              <p className="text-center text-gray-500 mt-3 text-sm">
-                  Sleep de rode cirkel (JIJ) naar de juiste plek!
+              <p className="text-center text-gray-500 mt-4 font-medium">
+                  👆 Sleep het shirt naar de juiste positie!
               </p>
           </div>
       </div>
