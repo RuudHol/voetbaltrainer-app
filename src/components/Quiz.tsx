@@ -72,18 +72,20 @@ const shirtColors: Record<PlayerColor, { fill: string; stroke: string; text: str
   keeper2: { fill: '#facc15', stroke: '#ca8a04', text: 'black' },
 };
 
+// Helper om backwards compatible te zijn met oude radius-based targets
+const getTargetSize = (target: TargetArea) => {
+    if (target.width !== undefined && target.height !== undefined) {
+        return { width: target.width, height: target.height };
+    }
+    // Backwards compatibility: radius naar width/height
+    const size = (target.radius || 8) * 1.5;
+    return { width: size, height: size };
+};
+
 // Display voor doelvak in Quiz (niet draggable)
 const TargetAreaDisplay = ({ target }: { target: TargetArea }) => {
-    const sizeRem = (target.radius * 6) / 16;
-    const shape = target.shape || 'circle';
-    
-    const shapeClasses = {
-        circle: 'rounded-full',
-        square: 'rounded-lg',
-        rectangle: 'rounded-lg',
-    };
-
-    const widthRem = shape === 'rectangle' ? sizeRem * 1.5 : sizeRem;
+    const { width, height } = getTargetSize(target);
+    const isCircle = target.shape === 'circle' || Math.abs(width - height) < 0.5;
     
     return (
         <div 
@@ -97,10 +99,10 @@ const TargetAreaDisplay = ({ target }: { target: TargetArea }) => {
             <div 
                 style={{ 
                     transform: 'translate(-50%, -50%)',
-                    width: `${widthRem}rem`,
-                    height: `${sizeRem}rem`,
+                    width: `${width}%`,
+                    height: `${height}%`,
                 }}
-                className={`${shapeClasses[shape]} border-4 border-dashed border-yellow-400 bg-yellow-400/20 animate-pulse`}
+                className={`${isCircle ? 'rounded-full' : 'rounded-lg'} border-4 border-dashed border-yellow-400 bg-yellow-400/20 animate-pulse`}
             />
         </div>
     );
@@ -304,20 +306,21 @@ export const Quiz: React.FC = () => {
       const tX = (target.x / 100) * rect.width;
       const tY = (target.y / 100) * rect.height;
       
-      // Grootte berekening (zelfde als in DraggableTarget)
-      const sizeRem = (target.radius * 6) / 16;
-      const sizePx = sizeRem * 16; // 1rem = 16px
-      const shape = target.shape || 'circle';
+      // Haal width/height op (met backwards compatibility)
+      const { width, height } = getTargetSize(target);
+      const isCircle = target.shape === 'circle' || Math.abs(width - height) < 0.5;
       
-      const widthPx = shape === 'rectangle' ? sizePx * 1.5 : sizePx;
-      const heightPx = sizePx;
+      // Bereken grootte in pixels
+      const widthPx = (width / 100) * rect.width;
+      const heightPx = (height / 100) * rect.height;
       
-      if (shape === 'circle') {
+      if (isCircle) {
           // Cirkel: check afstand tot centrum
+          const radius = Math.min(widthPx, heightPx) / 2;
           const distance = Math.sqrt(Math.pow(pX - tX, 2) + Math.pow(pY - tY, 2));
-          return distance <= sizePx / 2;
+          return distance <= radius;
       } else {
-          // Vierkant/rechthoek: check of binnen de box
+          // Rechthoek: check of binnen de box
           const halfWidth = widthPx / 2;
           const halfHeight = heightPx / 2;
           return pX >= tX - halfWidth && pX <= tX + halfWidth &&

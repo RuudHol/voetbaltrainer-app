@@ -17,14 +17,16 @@ export interface Ball {
 }
 
 // Vorm van het doelvak
-export type TargetShape = 'circle' | 'rectangle' | 'square';
+export type TargetShape = 'circle' | 'rectangle';
 
 export interface TargetArea {
   id: string;
   x: number;
   y: number;
-  radius: number; // Grootte (voor alle vormen)
-  shape?: TargetShape; // Default: circle
+  width: number;  // Breedte in % van veldbreedte
+  height: number; // Hoogte in % van veldhoogte
+  radius?: number; // DEPRECATED - voor backwards compatibility
+  shape?: TargetShape; // Default: rectangle (circle alleen als width === height)
 }
 
 export interface Situation {
