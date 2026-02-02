@@ -17,9 +17,9 @@ export const DraggableTarget: React.FC<DraggableTargetProps> = ({ target }) => {
     zIndex: 90, 
   } : undefined;
 
-  // Bereken de grootte op basis van de radius (radius is in % van veldbreedte)
-  // We gebruiken vw-achtige berekening: radius * 2 als percentage
-  const sizePercent = target.radius * 2;
+  // Grootte in rem op basis van radius (radius 2 = klein, radius 15 = groot)
+  // Base: radius * 6 pixels, omgerekend naar rem
+  const sizeRem = (target.radius * 6) / 16;
   
   return (
     <div 
@@ -37,16 +37,14 @@ export const DraggableTarget: React.FC<DraggableTargetProps> = ({ target }) => {
         <div 
             style={{ 
                 transform: 'translate(-50%, -50%)',
-                width: `${sizePercent}%`,
-                paddingBottom: `${sizePercent}%`, // Vierkant houden via padding trick
+                width: `${sizeRem}rem`,
+                height: `${sizeRem}rem`,
             }}
-            className="relative"
+            className="rounded-full border-4 border-dashed border-yellow-400 bg-yellow-400/30 flex items-center justify-center transition-all"
         >
-            <div className="absolute inset-0 rounded-full border-4 border-dashed border-yellow-400 bg-yellow-400/30 flex items-center justify-center transition-all">
-                <span className="text-xs font-bold text-yellow-800 bg-yellow-100 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    Doelvak
-                </span>
-            </div>
+            <span className="text-xs font-bold text-yellow-800 bg-yellow-100 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Doelvak
+            </span>
         </div>
     </div>
   );
