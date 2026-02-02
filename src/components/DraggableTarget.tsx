@@ -4,11 +4,13 @@ import { TargetArea } from '../types';
 
 interface DraggableTargetProps {
   target: TargetArea;
+  index?: number; // Voor label bij meerdere doelvakken
+  onDelete?: () => void; // Verwijder knop
 }
 
-export const DraggableTarget: React.FC<DraggableTargetProps> = ({ target }) => {
+export const DraggableTarget: React.FC<DraggableTargetProps> = ({ target, index = 0, onDelete }) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: 'target-area',
+    id: `target-${target.id}`,
     data: { type: 'target', ...target },
   });
 
@@ -17,9 +19,20 @@ export const DraggableTarget: React.FC<DraggableTargetProps> = ({ target }) => {
     zIndex: 90, 
   } : undefined;
 
-  // Grootte in rem op basis van radius (radius 2 = klein, radius 15 = groot)
-  // Base: radius * 6 pixels, omgerekend naar rem
+  // Grootte in rem op basis van radius
   const sizeRem = (target.radius * 6) / 16;
+  const shape = target.shape || 'circle';
+  
+  // Vorm classes
+  const shapeClasses = {
+    circle: 'rounded-full',
+    square: 'rounded-lg',
+    rectangle: 'rounded-lg',
+  };
+
+  // Rechthoek is breder
+  const widthRem = shape === 'rectangle' ? sizeRem * 1.5 : sizeRem;
+  const heightRem = sizeRem;
   
   return (
     <div 
@@ -37,14 +50,27 @@ export const DraggableTarget: React.FC<DraggableTargetProps> = ({ target }) => {
         <div 
             style={{ 
                 transform: 'translate(-50%, -50%)',
-                width: `${sizeRem}rem`,
-                height: `${sizeRem}rem`,
+                width: `${widthRem}rem`,
+                height: `${heightRem}rem`,
             }}
-            className="rounded-full border-4 border-dashed border-yellow-400 bg-yellow-400/30 flex items-center justify-center transition-all"
+            className={`${shapeClasses[shape]} border-4 border-dashed border-yellow-400 bg-yellow-400/30 flex items-center justify-center transition-all relative`}
         >
             <span className="text-xs font-bold text-yellow-800 bg-yellow-100 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Doelvak
+                {index > 0 ? `Doelvak ${index + 1}` : 'Doelvak'}
             </span>
+            
+            {/* Verwijder knop */}
+            {onDelete && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                    }}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 flex items-center justify-center"
+                >
+                    ×
+                </button>
+            )}
         </div>
     </div>
   );

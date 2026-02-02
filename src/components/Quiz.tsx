@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getSituations } from '../utils/storage';
-import { Situation, DraggableType, PlayerColor } from '../types';
+import { Situation, DraggableType, PlayerColor, TargetArea } from '../types';
 import { SoccerField } from './SoccerField';
 import { BallToken } from './BallToken';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
@@ -70,6 +70,40 @@ const shirtColors: Record<PlayerColor, { fill: string; stroke: string; text: str
   team1: { fill: '#ef4444', stroke: '#b91c1c', text: 'white' },
   team2: { fill: '#3b82f6', stroke: '#1d4ed8', text: 'white' },
   keeper2: { fill: '#facc15', stroke: '#ca8a04', text: 'black' },
+};
+
+// Display voor doelvak in Quiz (niet draggable)
+const TargetAreaDisplay = ({ target }: { target: TargetArea }) => {
+    const sizeRem = (target.radius * 6) / 16;
+    const shape = target.shape || 'circle';
+    
+    const shapeClasses = {
+        circle: 'rounded-full',
+        square: 'rounded-lg',
+        rectangle: 'rounded-lg',
+    };
+
+    const widthRem = shape === 'rectangle' ? sizeRem * 1.5 : sizeRem;
+    
+    return (
+        <div 
+            style={{
+                position: 'absolute',
+                left: `${target.x}%`,
+                top: `${target.y}%`,
+            }}
+            className="pointer-events-none"
+        >
+            <div 
+                style={{ 
+                    transform: 'translate(-50%, -50%)',
+                    width: `${widthRem}rem`,
+                    height: `${sizeRem}rem`,
+                }}
+                className={`${shapeClasses[shape]} border-4 border-dashed border-yellow-400 bg-yellow-400/20 animate-pulse`}
+            />
+        </div>
+    );
 };
 
 // Draggable token dat shirt of bal toont op basis van type
@@ -263,15 +297,46 @@ export const Quiz: React.FC = () => {
       }
   }, [currentSituation]);
 
-  // Check of een positie in het doelvak zit
-  const isInTarget = (pos: { x: number; y: number }, target: { x: number; y: number; radius: number }, rect: DOMRect): boolean => {
+  // Check of een positie in een doelvak zit (rekening houdend met vorm)
+  const isInTarget = (pos: { x: number; y: number }, target: TargetArea, rect: DOMRect): boolean => {
       const pX = (pos.x / 100) * rect.width;
       const pY = (pos.y / 100) * rect.height;
       const tX = (target.x / 100) * rect.width;
       const tY = (target.y / 100) * rect.height;
-      const distance = Math.sqrt(Math.pow(pX - tX, 2) + Math.pow(pY - tY, 2));
-      const radiusPixels = (target.radius / 100) * rect.width;
-      return distance <= radiusPixels;
+      
+      // Grootte berekening (zelfde als in DraggableTarget)
+      const sizeRem = (target.radius * 6) / 16;
+      const sizePx = sizeRem * 16; // 1rem = 16px
+      const shape = target.shape || 'circle';
+      
+      const widthPx = shape === 'rectangle' ? sizePx * 1.5 : sizePx;
+      const heightPx = sizePx;
+      
+      if (shape === 'circle') {
+          // Cirkel: check afstand tot centrum
+          const distance = Math.sqrt(Math.pow(pX - tX, 2) + Math.pow(pY - tY, 2));
+          return distance <= sizePx / 2;
+      } else {
+          // Vierkant/rechthoek: check of binnen de box
+          const halfWidth = widthPx / 2;
+          const halfHeight = heightPx / 2;
+          return pX >= tX - halfWidth && pX <= tX + halfWidth &&
+                 pY >= tY - halfHeight && pY <= tY + halfHeight;
+      }
+  };
+
+  // Check of een positie in minstens één van de doelvakken zit
+  const isInAnyTarget = (pos: { x: number; y: number }, targets: TargetArea[], rect: DOMRect): boolean => {
+      return targets.some(target => isInTarget(pos, target, rect));
+  };
+
+  // Haal alle doelvakken op (backwards compatible)
+  const getTargetAreas = (situation: Situation): TargetArea[] => {
+      if (situation.targetAreas && situation.targetAreas.length > 0) {
+          return situation.targetAreas;
+      }
+      // Fallback naar enkele targetArea
+      return [{ ...situation.targetArea, id: situation.targetArea.id || '1', shape: situation.targetArea.shape || 'circle' }];
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -299,9 +364,9 @@ export const Quiz: React.FC = () => {
       
       setUserPositions(newPositions);
 
-      // Check of ALLE symbolen in het doelvak zitten
-      const target = currentSituation.targetArea;
-      const allInTarget = newPositions.every(pos => isInTarget(pos, target, rect));
+      // Check of ALLE symbolen in minstens één doelvak zitten
+      const targets = getTargetAreas(currentSituation);
+      const allInTarget = newPositions.every(pos => isInAnyTarget(pos, targets, rect));
 
       if (allInTarget) {
           setFeedback('success');
@@ -318,8 +383,8 @@ export const Quiz: React.FC = () => {
       if (!fieldRef.current || !currentSituation) return;
       
       const rect = fieldRef.current.getBoundingClientRect();
-      const target = currentSituation.targetArea;
-      const allInTarget = userPositions.every(pos => isInTarget(pos, target, rect));
+      const targets = getTargetAreas(currentSituation);
+      const allInTarget = userPositions.every(pos => isInAnyTarget(pos, targets, rect));
 
       if (allInTarget) {
           setFeedback('success');
@@ -497,6 +562,11 @@ export const Quiz: React.FC = () => {
               <div ref={fieldRef} className="relative touch-none">
                   <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                       <SoccerField players={currentSituation.players}>
+                          {/* Doelvakken tonen */}
+                          {getTargetAreas(currentSituation).map(target => (
+                              <TargetAreaDisplay key={target.id} target={target} />
+                          ))}
+                          
                           {/* Bal weergeven als die er is */}
                           {currentSituation.ball && (
                               <BallToken ball={currentSituation.ball} />

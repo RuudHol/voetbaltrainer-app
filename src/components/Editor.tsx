@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
-import { Player, PlayerColor, TargetArea, Ball, Situation, DraggableType } from '../types';
+import { Player, PlayerColor, TargetArea, Ball, Situation, DraggableType, TargetShape } from '../types';
 import { SoccerField } from './SoccerField';
 import { DraggablePlayer } from './DraggablePlayer';
 import { DraggableTarget } from './DraggableTarget';
@@ -14,12 +14,16 @@ export const Editor: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [ball, setBall] = useState<Ball | null>(null);
-  const [targetArea, setTargetArea] = useState<TargetArea>({ x: 50, y: 50, radius: 5 });
+  const [targetAreas, setTargetAreas] = useState<TargetArea[]>([{ id: '1', x: 50, y: 50, radius: 8, shape: 'circle' }]);
+  const [selectedTargetId, setSelectedTargetId] = useState<string>('1'); // Welk doelvak wordt bewerkt
   const [question, setQuestion] = useState('');
   const [questionAudio, setQuestionAudio] = useState<string | undefined>(undefined);
   const [draggableType, setDraggableType] = useState<DraggableType>('team1');
   const [answerCount, setAnswerCount] = useState(1);
   const [trainerCode, setTrainerCodeState] = useState('');
+  
+  // Haal geselecteerde target op
+  const selectedTarget = targetAreas.find(t => t.id === selectedTargetId) || targetAreas[0];
   const fieldRef = useRef<HTMLDivElement>(null);
 
   // Laad situaties en trainer code bij start
@@ -55,13 +59,23 @@ export const Editor: React.FC = () => {
     const deltaXPercent = (delta.x / rect.width) * 100;
     const deltaYPercent = (delta.y / rect.height) * 100;
 
-    if (active.id === 'target-area') {
-        setTargetArea(prev => ({
-            ...prev,
-            x: Math.max(0, Math.min(100, prev.x + deltaXPercent)),
-            y: Math.max(0, Math.min(100, prev.y + deltaYPercent)),
+    const activeId = active.id.toString();
+    
+    // Check of het een target is (format: target-{id})
+    if (activeId.startsWith('target-')) {
+        const targetId = activeId.replace('target-', '');
+        setTargetAreas(prev => prev.map(t => {
+            if (t.id === targetId) {
+                return {
+                    ...t,
+                    x: Math.max(0, Math.min(100, t.x + deltaXPercent)),
+                    y: Math.max(0, Math.min(100, t.y + deltaYPercent)),
+                };
+            }
+            return t;
         }));
-    } else if (active.id === 'ball') {
+        setSelectedTargetId(targetId); // Selecteer deze target
+    } else if (activeId === 'ball') {
         setBall(prev => prev ? {
             x: Math.max(0, Math.min(100, prev.x + deltaXPercent)),
             y: Math.max(0, Math.min(100, prev.y + deltaYPercent)),
@@ -104,10 +118,40 @@ export const Editor: React.FC = () => {
     setBall(null);
     setQuestion('');
     setQuestionAudio(undefined);
-    setTargetArea({ x: 50, y: 50, radius: 5 });
+    setTargetAreas([{ id: '1', x: 50, y: 50, radius: 8, shape: 'circle' }]);
+    setSelectedTargetId('1');
     setDraggableType('team1');
     setAnswerCount(1);
     setEditingId(null);
+  };
+
+  // Voeg een nieuw doelvak toe
+  const addTargetArea = () => {
+    const newId = Date.now().toString();
+    setTargetAreas(prev => [...prev, { 
+        id: newId, 
+        x: 30 + Math.random() * 40, 
+        y: 30 + Math.random() * 40, 
+        radius: 8, 
+        shape: 'circle' 
+    }]);
+    setSelectedTargetId(newId);
+  };
+
+  // Verwijder een doelvak
+  const removeTargetArea = (id: string) => {
+    if (targetAreas.length <= 1) return; // Minstens 1 doelvak
+    setTargetAreas(prev => prev.filter(t => t.id !== id));
+    if (selectedTargetId === id) {
+        setSelectedTargetId(targetAreas[0].id);
+    }
+  };
+
+  // Update geselecteerde target
+  const updateSelectedTarget = (updates: Partial<TargetArea>) => {
+    setTargetAreas(prev => prev.map(t => 
+        t.id === selectedTargetId ? { ...t, ...updates } : t
+    ));
   };
 
   const handleSave = async () => {
@@ -121,7 +165,8 @@ export const Editor: React.FC = () => {
           questionAudio,
           players,
           ball: ball || undefined,
-          targetArea,
+          targetArea: targetAreas[0], // Backwards compatibility
+          targetAreas: targetAreas,
           draggableType,
           answerCount,
       };
@@ -138,7 +183,10 @@ export const Editor: React.FC = () => {
       setQuestionAudio(s.questionAudio);
       setPlayers(s.players);
       setBall(s.ball || null);
-      setTargetArea(s.targetArea);
+      // Gebruik targetAreas als die bestaat, anders maak array van targetArea
+      const areas = s.targetAreas || [{ ...s.targetArea, id: s.targetArea.id || '1', shape: s.targetArea.shape || 'circle' }];
+      setTargetAreas(areas);
+      setSelectedTargetId(areas[0].id);
       setDraggableType(s.draggableType || 'team1');
       setAnswerCount(s.answerCount || 1);
   };
@@ -268,53 +316,121 @@ export const Editor: React.FC = () => {
             </div>
         </div>
 
-        {/* Aantal antwoorden en doelvak grootte */}
-        <div className="mb-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Aantal antwoorden */}
-            <div className="p-4 bg-purple-50 rounded-xl">
-                <label className="block text-sm font-bold text-gray-700 mb-3">🔢 Hoeveel symbolen moet de speler plaatsen?</label>
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => setAnswerCount(Math.max(1, answerCount - 1))}
-                        className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
-                    >
-                        −
-                    </button>
-                    <div className="flex-1 text-center">
-                        <span className="text-3xl font-bold text-purple-700">{answerCount}</span>
-                        <p className="text-xs text-purple-600 mt-1">{answerCount === 1 ? 'symbool' : 'symbolen'}</p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => setAnswerCount(Math.min(5, answerCount + 1))}
-                        className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
-                    >
-                        +
-                    </button>
+        {/* Aantal antwoorden */}
+        <div className="mb-5 p-4 bg-purple-50 rounded-xl">
+            <label className="block text-sm font-bold text-gray-700 mb-3">🔢 Hoeveel symbolen moet de speler plaatsen?</label>
+            <div className="flex items-center gap-3 max-w-xs mx-auto">
+                <button
+                    type="button"
+                    onClick={() => setAnswerCount(Math.max(1, answerCount - 1))}
+                    className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
+                >
+                    −
+                </button>
+                <div className="flex-1 text-center">
+                    <span className="text-3xl font-bold text-purple-700">{answerCount}</span>
+                    <p className="text-xs text-purple-600 mt-1">{answerCount === 1 ? 'symbool' : 'symbolen'}</p>
                 </div>
+                <button
+                    type="button"
+                    onClick={() => setAnswerCount(Math.min(5, answerCount + 1))}
+                    className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
+                >
+                    +
+                </button>
             </div>
+        </div>
 
-            {/* Doelvak grootte */}
-            <div className="p-4 bg-amber-50 rounded-xl">
-                <label className="block text-sm font-bold text-gray-700 mb-3">📐 Grootte van het doelvak</label>
-                <div className="space-y-3">
-                    <input
-                        type="range"
-                        min="2"
-                        max="15"
-                        step="0.5"
-                        value={targetArea.radius}
-                        onChange={(e) => setTargetArea(prev => ({ ...prev, radius: parseFloat(e.target.value) }))}
-                        className="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                    />
-                    <div className="flex justify-between text-xs text-amber-700 font-medium">
-                        <span>Klein</span>
-                        <span className="text-amber-900 font-bold">{targetArea.radius}%</span>
-                        <span>Groot</span>
-                    </div>
-                </div>
+        {/* Doelvakken instellingen */}
+        <div className="mb-5 p-4 bg-amber-50 rounded-xl">
+            <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-bold text-gray-700">🎯 Doelvakken ({targetAreas.length})</label>
+                <button
+                    type="button"
+                    onClick={addTargetArea}
+                    className="btn-bounce px-3 py-1.5 bg-amber-500 text-white rounded-lg text-sm font-bold hover:bg-amber-600 flex items-center gap-1"
+                >
+                    <Plus size={14} /> Doelvak
+                </button>
             </div>
+            
+            {/* Doelvak selector */}
+            {targetAreas.length > 1 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                    {targetAreas.map((t, i) => (
+                        <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setSelectedTargetId(t.id)}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                                selectedTargetId === t.id 
+                                    ? 'bg-amber-500 text-white shadow-lg' 
+                                    : 'bg-white text-amber-700 border-2 border-amber-200 hover:bg-amber-100'
+                            }`}
+                        >
+                            {i + 1}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Instellingen voor geselecteerd doelvak */}
+            {selectedTarget && (
+                <div className="space-y-4">
+                    {/* Vorm */}
+                    <div>
+                        <label className="block text-xs font-bold text-amber-800 mb-2">Vorm</label>
+                        <div className="flex gap-2">
+                            {(['circle', 'square', 'rectangle'] as TargetShape[]).map(shape => (
+                                <button
+                                    key={shape}
+                                    type="button"
+                                    onClick={() => updateSelectedTarget({ shape })}
+                                    className={`btn-bounce flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                                        selectedTarget.shape === shape || (!selectedTarget.shape && shape === 'circle')
+                                            ? 'bg-amber-500 text-white shadow-lg' 
+                                            : 'bg-white text-amber-700 border-2 border-amber-200 hover:bg-amber-100'
+                                    }`}
+                                >
+                                    {shape === 'circle' && '⭕ Cirkel'}
+                                    {shape === 'square' && '⬜ Vierkant'}
+                                    {shape === 'rectangle' && '▭ Rechthoek'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Grootte */}
+                    <div>
+                        <label className="block text-xs font-bold text-amber-800 mb-2">Grootte</label>
+                        <input
+                            type="range"
+                            min="3"
+                            max="30"
+                            step="1"
+                            value={selectedTarget.radius}
+                            onChange={(e) => updateSelectedTarget({ radius: parseFloat(e.target.value) })}
+                            className="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                        />
+                        <div className="flex justify-between text-xs text-amber-700 font-medium mt-1">
+                            <span>Klein</span>
+                            <span className="text-amber-900 font-bold">{selectedTarget.radius}</span>
+                            <span>Groot</span>
+                        </div>
+                    </div>
+
+                    {/* Verwijder knop */}
+                    {targetAreas.length > 1 && (
+                        <button
+                            type="button"
+                            onClick={() => removeTargetArea(selectedTarget.id)}
+                            className="w-full py-2 bg-red-100 text-red-600 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors"
+                        >
+                            <Trash2 size={14} className="inline mr-1" /> Dit doelvak verwijderen
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
 
         {/* Spelers toevoegen toolbar */}
@@ -368,13 +484,20 @@ export const Editor: React.FC = () => {
                     <DraggablePlayer key={p.id} player={p} />
                 ))}
                 {ball && <DraggableBall ball={ball} />}
-                <DraggableTarget target={targetArea} />
+                {targetAreas.map((t, i) => (
+                    <DraggableTarget 
+                        key={t.id} 
+                        target={t} 
+                        index={i}
+                        onDelete={targetAreas.length > 1 ? () => removeTargetArea(t.id) : undefined}
+                    />
+                ))}
             </SoccerField>
             </DndContext>
         </div>
         
         <p className="text-center text-gray-500 mt-4 font-medium">
-            👆 Sleep de spelers, bal en het <span className="text-amber-600 font-bold">gele doelvak</span> naar de juiste posities
+            👆 Sleep de spelers, bal en de <span className="text-amber-600 font-bold">gele doelvakken</span> naar de juiste posities
         </p>
       </div>
 
