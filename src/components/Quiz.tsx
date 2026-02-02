@@ -73,15 +73,18 @@ const shirtColors: Record<PlayerColor, { fill: string; stroke: string; text: str
 };
 
 // Draggable token dat shirt of bal toont op basis van type
-const DraggableUserToken = ({ x, y, type }: { x: number, y: number, type: DraggableType }) => {
+const DraggableUserToken = ({ x, y, type, index = 0, total = 1 }: { x: number, y: number, type: DraggableType, index?: number, total?: number }) => {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
-        id: 'user-player',
+        id: `user-player-${index}`,
     });
 
     const style = transform ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 100,
+        zIndex: 100 + index,
     } : undefined;
+
+    // Label voor meerdere symbolen
+    const label = total > 1 ? `${index + 1}` : 'JIJ';
 
     // Render een voetbal
     if (type === 'ball') {
@@ -107,8 +110,8 @@ const DraggableUserToken = ({ x, y, type }: { x: number, y: number, type: Dragga
                         <path d="M48 25 L38 30 L38 20 Z" fill="#333"/>
                         <path d="M2 25 L12 20 L12 30 Z" fill="#333"/>
                         <path d="M15 45 L20 38 L25 42 L30 38 L35 45 Z" fill="#333"/>
-                        {/* JIJ tekst */}
-                        <text x="25" y="29" textAnchor="middle" fill="#ef4444" fontSize="10" fontWeight="bold">JIJ</text>
+                        {/* Label */}
+                        <text x="25" y="29" textAnchor="middle" fill="#ef4444" fontSize="10" fontWeight="bold">{label}</text>
                     </svg>
                 </div>
             </div>
@@ -146,7 +149,7 @@ const DraggableUserToken = ({ x, y, type }: { x: number, y: number, type: Dragga
                         stroke={colors.stroke}
                         strokeWidth="1.5"
                     />
-                    {/* JIJ tekst */}
+                    {/* Label */}
                     <text
                         x="20"
                         y="28"
@@ -155,7 +158,7 @@ const DraggableUserToken = ({ x, y, type }: { x: number, y: number, type: Dragga
                         fontSize="11"
                         fontWeight="bold"
                     >
-                        JIJ
+                        {label}
                     </text>
                 </svg>
             </div>
@@ -207,11 +210,26 @@ const triggerSuccessConfetti = () => {
     }, 300);
 };
 
+// Genereer start posities voor meerdere symbolen
+const generateStartPositions = (count: number): { x: number; y: number }[] => {
+    const positions: { x: number; y: number }[] = [];
+    const spacing = 15; // Afstand tussen symbolen
+    const startX = 50 - ((count - 1) * spacing) / 2;
+    
+    for (let i = 0; i < count; i++) {
+        positions.push({
+            x: startX + i * spacing,
+            y: 85
+        });
+    }
+    return positions;
+};
+
 export const Quiz: React.FC = () => {
   const [situations, setSituations] = useState<Situation[]>([]);
   const [currentSituation, setCurrentSituation] = useState<Situation | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userPos, setUserPos] = useState({ x: 50, y: 90 });
+  const [userPositions, setUserPositions] = useState<{ x: number; y: number }[]>([{ x: 50, y: 85 }]);
   const [feedback, setFeedback] = useState<'none' | 'success' | 'fail'>('none');
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
@@ -245,31 +263,65 @@ export const Quiz: React.FC = () => {
       }
   }, [currentSituation]);
 
+  // Check of een positie in het doelvak zit
+  const isInTarget = (pos: { x: number; y: number }, target: { x: number; y: number; radius: number }, rect: DOMRect): boolean => {
+      const pX = (pos.x / 100) * rect.width;
+      const pY = (pos.y / 100) * rect.height;
+      const tX = (target.x / 100) * rect.width;
+      const tY = (target.y / 100) * rect.height;
+      const distance = Math.sqrt(Math.pow(pX - tX, 2) + Math.pow(pY - tY, 2));
+      const radiusPixels = (target.radius / 100) * rect.width;
+      return distance <= radiusPixels;
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
-      const { delta } = event;
+      const { active, delta } = event;
       if (!fieldRef.current || !currentSituation) return;
 
       const rect = fieldRef.current.getBoundingClientRect();
       const deltaXPercent = (delta.x / rect.width) * 100;
       const deltaYPercent = (delta.y / rect.height) * 100;
       
-      const newX = Math.max(0, Math.min(100, userPos.x + deltaXPercent));
-      const newY = Math.max(0, Math.min(100, userPos.y + deltaYPercent));
+      // Vind welk symbool werd gesleept (id is 'user-player-0', 'user-player-1', etc.)
+      const activeId = active.id.toString();
+      const playerIndex = parseInt(activeId.replace('user-player-', '')) || 0;
       
-      setUserPos({ x: newX, y: newY });
+      // Update de positie van dit specifieke symbool
+      const newPositions = userPositions.map((pos, index) => {
+          if (index === playerIndex) {
+              return {
+                  x: Math.max(0, Math.min(100, pos.x + deltaXPercent)),
+                  y: Math.max(0, Math.min(100, pos.y + deltaYPercent)),
+              };
+          }
+          return pos;
+      });
+      
+      setUserPositions(newPositions);
 
+      // Check of ALLE symbolen in het doelvak zitten
       const target = currentSituation.targetArea;
-      
-      const pX = (newX / 100) * rect.width;
-      const pY = (newY / 100) * rect.height;
-      
-      const tX = (target.x / 100) * rect.width;
-      const tY = (target.y / 100) * rect.height;
-      
-      const distance = Math.sqrt(Math.pow(pX - tX, 2) + Math.pow(pY - tY, 2));
-      const radiusPixels = (target.radius / 100) * rect.width;
+      const allInTarget = newPositions.every(pos => isInTarget(pos, target, rect));
 
-      if (distance <= radiusPixels) {
+      if (allInTarget) {
+          setFeedback('success');
+          setScore(prev => prev + 1);
+          setStreak(prev => prev + 1);
+          setAttempts(prev => prev + 1);
+          speakText('Super goed!');
+          triggerSuccessConfetti();
+      }
+  };
+
+  // Check knop voor wanneer speler denkt klaar te zijn
+  const checkAnswer = () => {
+      if (!fieldRef.current || !currentSituation) return;
+      
+      const rect = fieldRef.current.getBoundingClientRect();
+      const target = currentSituation.targetArea;
+      const allInTarget = userPositions.every(pos => isInTarget(pos, target, rect));
+
+      if (allInTarget) {
           setFeedback('success');
           setScore(prev => prev + 1);
           setStreak(prev => prev + 1);
@@ -287,7 +339,8 @@ export const Quiz: React.FC = () => {
   const selectSituation = (s: Situation, index: number) => {
       setCurrentSituation(s);
       setCurrentIndex(index);
-      setUserPos({ x: 50, y: 90 });
+      const count = s.answerCount || 1;
+      setUserPositions(generateStartPositions(count));
       setFeedback('none');
   };
 
@@ -449,9 +502,16 @@ export const Quiz: React.FC = () => {
                               <BallToken ball={currentSituation.ball} />
                           )}
                           
-                          {feedback !== 'success' && (
-                              <DraggableUserToken x={userPos.x} y={userPos.y} type={currentSituation.draggableType || 'team1'} />
-                          )}
+                          {feedback !== 'success' && userPositions.map((pos, index) => (
+                              <DraggableUserToken 
+                                  key={index}
+                                  x={pos.x} 
+                                  y={pos.y} 
+                                  type={currentSituation.draggableType || 'team1'}
+                                  index={index}
+                                  total={userPositions.length}
+                              />
+                          ))}
                           
                           {/* Success Overlay */}
                           {feedback === 'success' && (
@@ -488,9 +548,23 @@ export const Quiz: React.FC = () => {
                   </DndContext>
               </div>
               
-              <p className="text-center text-gray-500 mt-4 font-medium">
-                  👆 Sleep het shirt naar de juiste positie!
-              </p>
+              {/* Help tekst en check knop */}
+              <div className="mt-4 flex flex-col items-center gap-3">
+                  <p className="text-center text-gray-500 font-medium">
+                      👆 Sleep {userPositions.length > 1 ? `alle ${userPositions.length} symbolen` : 'het symbool'} naar de juiste {userPositions.length > 1 ? 'posities' : 'positie'}!
+                  </p>
+                  
+                  {/* Check knop bij meerdere symbolen */}
+                  {userPositions.length > 1 && feedback !== 'success' && (
+                      <button
+                          onClick={checkAnswer}
+                          className="btn-bounce px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                      >
+                          <CheckCircle size={20} />
+                          Controleer antwoord
+                      </button>
+                  )}
+              </div>
           </div>
       </div>
   );

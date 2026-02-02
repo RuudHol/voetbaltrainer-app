@@ -30,4 +30,5 @@ export interface Situation {
   ball?: Ball;
   targetArea: TargetArea;
   draggableType?: DraggableType; // Wat moet de speler verslepen? Default: team1 shirt
+  answerCount?: number; // Hoeveel symbolen moet de speler plaatsen? Default: 1
 }

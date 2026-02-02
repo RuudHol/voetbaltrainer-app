@@ -18,6 +18,7 @@ export const Editor: React.FC = () => {
   const [question, setQuestion] = useState('');
   const [questionAudio, setQuestionAudio] = useState<string | undefined>(undefined);
   const [draggableType, setDraggableType] = useState<DraggableType>('team1');
+  const [answerCount, setAnswerCount] = useState(1);
   const [trainerCode, setTrainerCodeState] = useState('');
   const fieldRef = useRef<HTMLDivElement>(null);
 
@@ -103,8 +104,9 @@ export const Editor: React.FC = () => {
     setBall(null);
     setQuestion('');
     setQuestionAudio(undefined);
-    setTargetArea({ x: 50, y: 50, radius: 2 });
+    setTargetArea({ x: 50, y: 50, radius: 5 });
     setDraggableType('team1');
+    setAnswerCount(1);
     setEditingId(null);
   };
 
@@ -121,6 +123,7 @@ export const Editor: React.FC = () => {
           ball: ball || undefined,
           targetArea,
           draggableType,
+          answerCount,
       };
       await saveSituation(situation);
       const data = await getSituations();
@@ -137,6 +140,7 @@ export const Editor: React.FC = () => {
       setBall(s.ball || null);
       setTargetArea(s.targetArea);
       setDraggableType(s.draggableType || 'team1');
+      setAnswerCount(s.answerCount || 1);
   };
 
   const handleDelete = async (id: string) => {
@@ -261,6 +265,55 @@ export const Editor: React.FC = () => {
               >
                 ⚽ Bal
               </button>
+            </div>
+        </div>
+
+        {/* Aantal antwoorden en doelvak grootte */}
+        <div className="mb-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Aantal antwoorden */}
+            <div className="p-4 bg-purple-50 rounded-xl">
+                <label className="block text-sm font-bold text-gray-700 mb-3">🔢 Hoeveel symbolen moet de speler plaatsen?</label>
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setAnswerCount(Math.max(1, answerCount - 1))}
+                        className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
+                    >
+                        −
+                    </button>
+                    <div className="flex-1 text-center">
+                        <span className="text-3xl font-bold text-purple-700">{answerCount}</span>
+                        <p className="text-xs text-purple-600 mt-1">{answerCount === 1 ? 'symbool' : 'symbolen'}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setAnswerCount(Math.min(5, answerCount + 1))}
+                        className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
+                    >
+                        +
+                    </button>
+                </div>
+            </div>
+
+            {/* Doelvak grootte */}
+            <div className="p-4 bg-amber-50 rounded-xl">
+                <label className="block text-sm font-bold text-gray-700 mb-3">📐 Grootte van het doelvak</label>
+                <div className="space-y-3">
+                    <input
+                        type="range"
+                        min="2"
+                        max="15"
+                        step="0.5"
+                        value={targetArea.radius}
+                        onChange={(e) => setTargetArea(prev => ({ ...prev, radius: parseFloat(e.target.value) }))}
+                        className="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    />
+                    <div className="flex justify-between text-xs text-amber-700 font-medium">
+                        <span>Klein</span>
+                        <span className="text-amber-900 font-bold">{targetArea.radius}%</span>
+                        <span>Groot</span>
+                    </div>
+                </div>
             </div>
         </div>
 
