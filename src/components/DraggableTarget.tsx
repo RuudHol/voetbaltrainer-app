@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { TargetArea } from '../types';
 
@@ -7,7 +7,7 @@ interface DraggableTargetProps {
   index?: number;
   onDelete?: () => void;
   onResize?: (id: string, width: number, height: number) => void;
-  fieldRef?: React.RefObject<HTMLDivElement>;
+  fieldRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 // Helper om backwards compatible te zijn met oude radius-based targets
@@ -34,10 +34,28 @@ export const DraggableTarget: React.FC<DraggableTargetProps> = ({
 
   const [isResizing, setIsResizing] = useState(false);
   const [resizeCorner, setResizeCorner] = useState<string | null>(null);
+  const [fieldSize, setFieldSize] = useState({ width: 0, height: 0 });
   const startPos = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
   const { width, height } = getTargetSize(target);
   const isCircle = target.shape === 'circle' || Math.abs(width - height) < 0.5;
+
+  // Meet het veld om pixels te kunnen berekenen
+  useEffect(() => {
+    const updateSize = () => {
+      if (fieldRef?.current) {
+        const rect = fieldRef.current.getBoundingClientRect();
+        setFieldSize({ width: rect.width, height: rect.height });
+      }
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, [fieldRef]);
+
+  // Bereken pixels op basis van veldgrootte
+  const widthPx = fieldSize.width > 0 ? (width / 100) * fieldSize.width : 80;
+  const heightPx = fieldSize.height > 0 ? (height / 100) * fieldSize.height : 80;
 
   const dndStyle = transform && !isResizing ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -147,8 +165,10 @@ export const DraggableTarget: React.FC<DraggableTargetProps> = ({
       <div 
         style={{ 
           transform: 'translate(-50%, -50%)',
-          width: `${width}%`,
-          height: `${height}%`,
+          width: `${widthPx}px`,
+          height: `${heightPx}px`,
+          minWidth: '40px',
+          minHeight: '40px',
         }}
         className={`${isCircle ? 'rounded-full' : 'rounded-lg'} border-4 border-dashed border-yellow-400 bg-yellow-400/30 flex items-center justify-center transition-colors relative`}
       >

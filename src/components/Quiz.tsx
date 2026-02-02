@@ -83,9 +83,27 @@ const getTargetSize = (target: TargetArea) => {
 };
 
 // Display voor doelvak in Quiz (niet draggable)
-const TargetAreaDisplay = ({ target }: { target: TargetArea }) => {
+const TargetAreaDisplay = ({ target, fieldRef }: { target: TargetArea, fieldRef?: React.RefObject<HTMLDivElement | null> }) => {
     const { width, height } = getTargetSize(target);
     const isCircle = target.shape === 'circle' || Math.abs(width - height) < 0.5;
+    
+    // Bereken pixels op basis van parent (veld) grootte
+    const [size, setSize] = useState({ w: 80, h: 80 });
+    
+    useEffect(() => {
+        const updateSize = () => {
+            if (fieldRef?.current) {
+                const rect = fieldRef.current.getBoundingClientRect();
+                setSize({
+                    w: (width / 100) * rect.width,
+                    h: (height / 100) * rect.height
+                });
+            }
+        };
+        updateSize();
+        window.addEventListener('resize', updateSize);
+        return () => window.removeEventListener('resize', updateSize);
+    }, [fieldRef, width, height]);
     
     return (
         <div 
@@ -99,8 +117,10 @@ const TargetAreaDisplay = ({ target }: { target: TargetArea }) => {
             <div 
                 style={{ 
                     transform: 'translate(-50%, -50%)',
-                    width: `${width}%`,
-                    height: `${height}%`,
+                    width: `${size.w}px`,
+                    height: `${size.h}px`,
+                    minWidth: '40px',
+                    minHeight: '40px',
                 }}
                 className={`${isCircle ? 'rounded-full' : 'rounded-lg'} border-4 border-dashed border-yellow-400 bg-yellow-400/20 animate-pulse`}
             />
@@ -567,7 +587,7 @@ export const Quiz: React.FC = () => {
                       <SoccerField players={currentSituation.players}>
                           {/* Doelvakken tonen */}
                           {getTargetAreas(currentSituation).map(target => (
-                              <TargetAreaDisplay key={target.id} target={target} />
+                              <TargetAreaDisplay key={target.id} target={target} fieldRef={fieldRef} />
                           ))}
                           
                           {/* Bal weergeven als die er is */}
