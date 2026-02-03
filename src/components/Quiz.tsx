@@ -344,6 +344,10 @@ export const Quiz: React.FC = () => {
       // Check of ALLE symbolen in minstens één doelvak zitten
       const targets = getTargetAreas(currentSituation);
       const allInTarget = newPositions.every(pos => isInAnyTarget(pos, targets, rect));
+      
+      // Check of het zojuist gedropte symbool in een doelvak zit
+      const droppedPosition = newPositions[playerIndex];
+      const droppedInTarget = isInAnyTarget(droppedPosition, targets, rect);
 
       if (allInTarget) {
           setFeedback('success');
@@ -352,6 +356,11 @@ export const Quiz: React.FC = () => {
           setAttempts(prev => prev + 1);
           speakText('Super goed!');
           triggerSuccessConfetti();
+      } else if (!droppedInTarget) {
+          // Symbool buiten doelvak gedropt - toon foutmelding
+          setFeedback('fail');
+          setStreak(0);
+          speakText('Helaas pindakaas!');
       }
   };
 
