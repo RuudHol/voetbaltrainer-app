@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getSituations } from '../utils/storage';
-import { Situation, DraggableType, PlayerColor, TargetArea, Route, RoutePoint } from '../types';
+import { Situation, DraggableType, PlayerColor, TargetArea, RoutePoint } from '../types';
 import { SoccerField } from './SoccerField';
 import { BallToken } from './BallToken';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
