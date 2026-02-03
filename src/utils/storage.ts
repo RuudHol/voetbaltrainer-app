@@ -35,6 +35,8 @@ export const getSituations = async (): Promise<(Situation & { ownerCode?: string
     targetAreas: row.target_areas || undefined,
     draggableType: row.draggable_type || 'team1',
     answerCount: row.answer_count || 1,
+    exerciseType: row.exercise_type || 'position',
+    route: row.route || undefined,
     ownerCode: row.owner_code,
   }));
 };
@@ -55,6 +57,8 @@ export const saveSituation = async (situation: Situation): Promise<void> => {
       target_areas: situation.targetAreas || null,
       draggable_type: situation.draggableType || 'team1',
       answer_count: situation.answerCount || 1,
+      exercise_type: situation.exerciseType || 'position',
+      route: situation.route || null,
       owner_code: trainerCode || null,
     });
 
