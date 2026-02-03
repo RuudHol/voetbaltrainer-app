@@ -96,7 +96,7 @@ const DraggableUserToken = ({ x, y, type, index = 0, total = 1 }: { x: number, y
     // Label voor meerdere symbolen
     const label = total > 1 ? `${index + 1}` : 'JIJ';
 
-    // Render een voetbal
+    // Render een voetbal (zelfde grootte als vaste bal)
     if (type === 'ball') {
         return (
             <div
@@ -112,7 +112,7 @@ const DraggableUserToken = ({ x, y, type, index = 0, total = 1 }: { x: number, y
                 className="touch-none cursor-move"
             >
                 <div style={{ transform: 'translate(-50%, -50%)' }} className="relative animate-pulse">
-                    <svg viewBox="0 0 50 50" className="w-12 h-12 drop-shadow-lg">
+                    <svg viewBox="0 0 50 50" className="w-7 h-7 drop-shadow-lg">
                         {/* Voetbal basis */}
                         <circle cx="25" cy="25" r="23" fill="white" stroke="#333" strokeWidth="2"/>
                         {/* Zwarte vlakken */}
@@ -121,14 +121,14 @@ const DraggableUserToken = ({ x, y, type, index = 0, total = 1 }: { x: number, y
                         <path d="M2 25 L12 20 L12 30 Z" fill="#333"/>
                         <path d="M15 45 L20 38 L25 42 L30 38 L35 45 Z" fill="#333"/>
                         {/* Label */}
-                        <text x="25" y="29" textAnchor="middle" fill="#ef4444" fontSize="10" fontWeight="bold">{label}</text>
+                        <text x="25" y="29" textAnchor="middle" fill="#ef4444" fontSize="12" fontWeight="bold">{label}</text>
                     </svg>
                 </div>
             </div>
         );
     }
 
-    // Render een shirt in de juiste kleur
+    // Render een shirt in de juiste kleur (zelfde grootte als vaste spelers: w-7 h-8)
     const colors = shirtColors[type as PlayerColor];
     return (
         <div
@@ -144,7 +144,7 @@ const DraggableUserToken = ({ x, y, type, index = 0, total = 1 }: { x: number, y
             className="touch-none cursor-move"
         >
             <div style={{ transform: 'translate(-50%, -50%)' }} className="relative animate-pulse">
-                <svg viewBox="0 0 40 44" className="w-12 h-14 drop-shadow-lg">
+                <svg viewBox="0 0 40 44" className="w-7 h-8 drop-shadow-lg">
                     {/* Shirt body */}
                     <path
                         d="M8 12 L2 8 L6 2 L14 6 L16 4 L24 4 L26 6 L34 2 L38 8 L32 12 L32 42 L8 42 Z"
@@ -165,8 +165,9 @@ const DraggableUserToken = ({ x, y, type, index = 0, total = 1 }: { x: number, y
                         y="28"
                         textAnchor="middle"
                         fill={colors.text}
-                        fontSize="11"
+                        fontSize="14"
                         fontWeight="bold"
+                        fontFamily="Arial, sans-serif"
                     >
                         {label}
                     </text>
@@ -321,6 +322,12 @@ export const Quiz: React.FC = () => {
   const handleDragEnd = (event: DragEndEvent) => {
       const { active, delta } = event;
       if (!fieldRef.current || !currentSituation) return;
+      
+      // Route oefeningen hebben hun eigen handler
+      if (currentSituation.exerciseType === 'route') {
+          handleRouteDragEnd(event);
+          return;
+      }
 
       const rect = fieldRef.current.getBoundingClientRect();
       const deltaXPercent = (delta.x / rect.width) * 100;
@@ -610,7 +617,7 @@ export const Quiz: React.FC = () => {
               </div>
               
               <div ref={fieldRef} className="relative touch-none">
-                  <DndContext sensors={sensors} onDragEnd={currentSituation.exerciseType === 'route' ? handleRouteDragEnd : handleDragEnd}>
+                  <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                       <SoccerField players={currentSituation.players}>
                           {/* Doelvakken zijn verborgen voor de speler - alleen zichtbaar bij succes */}
                           
