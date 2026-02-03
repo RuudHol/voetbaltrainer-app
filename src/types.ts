@@ -29,6 +29,21 @@ export interface TargetArea {
   shape?: TargetShape; // Default: rectangle (circle alleen als width === height)
 }
 
+// Route/traject dat de speler moet volgen
+export interface RoutePoint {
+  x: number; // % van veldbreedte
+  y: number; // % van veldhoogte
+}
+
+export interface Route {
+  id: string;
+  points: RoutePoint[]; // Array van punten die de route vormen
+  color?: string; // Kleur van de route (default: oranje)
+}
+
+// Type oefening
+export type ExerciseType = 'position' | 'route'; // position = huidige drag naar doelvak, route = volg de lijn
+
 export interface Situation {
   id: string;
   question: string;
@@ -39,4 +54,6 @@ export interface Situation {
   targetAreas?: TargetArea[]; // Meerdere doelvakken
   draggableType?: DraggableType; // Wat moet de speler verslepen? Default: team1 shirt
   answerCount?: number; // Hoeveel symbolen moet de speler plaatsen? Default: 1
+  exerciseType?: ExerciseType; // Type oefening: position (default) of route
+  route?: Route; // Route die de speler moet volgen (alleen bij exerciseType: 'route')
 }

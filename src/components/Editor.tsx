@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
-import { Player, PlayerColor, TargetArea, Ball, Situation, DraggableType } from '../types';
+import { Player, PlayerColor, TargetArea, Ball, Situation, DraggableType, ExerciseType, Route, RoutePoint } from '../types';
 import { SoccerField } from './SoccerField';
 import { DraggablePlayer } from './DraggablePlayer';
 import { DraggableTarget } from './DraggableTarget';
 import { DraggableBall } from './DraggableBall';
 import { saveSituation, getSituations, deleteSituation, getTrainerCode, setTrainerCode } from '../utils/storage';
-import { Plus, Trash2, Save, Edit2, X, Key } from 'lucide-react';
+import { Plus, Trash2, Save, Edit2, X, Key, Route as RouteIcon, Target, Undo2 } from 'lucide-react';
 import { AudioRecorder } from './AudioRecorder';
 
 export const Editor: React.FC = () => {
@@ -20,6 +20,9 @@ export const Editor: React.FC = () => {
   const [draggableType, setDraggableType] = useState<DraggableType>('team1');
   const [answerCount, setAnswerCount] = useState(1);
   const [trainerCode, setTrainerCodeState] = useState('');
+  const [exerciseType, setExerciseType] = useState<ExerciseType>('position');
+  const [route, setRoute] = useState<Route | null>(null);
+  const [isDrawingRoute, setIsDrawingRoute] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
 
   // Laad situaties en trainer code bij start
@@ -117,6 +120,51 @@ export const Editor: React.FC = () => {
     setDraggableType('team1');
     setAnswerCount(1);
     setEditingId(null);
+    setExerciseType('position');
+    setRoute(null);
+    setIsDrawingRoute(false);
+  };
+
+  // Route tekenen handlers
+  const startDrawingRoute = () => {
+    setIsDrawingRoute(true);
+    setRoute({ id: Date.now().toString(), points: [], color: '#ff6b35' });
+  };
+
+  const handleFieldClickForRoute = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDrawingRoute || !fieldRef.current) return;
+    
+    const rect = fieldRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    // Voeg punt toe aan route
+    setRoute(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        points: [...prev.points, { x, y }]
+      };
+    });
+  };
+
+  const undoLastRoutePoint = () => {
+    setRoute(prev => {
+      if (!prev || prev.points.length === 0) return prev;
+      return {
+        ...prev,
+        points: prev.points.slice(0, -1)
+      };
+    });
+  };
+
+  const finishDrawingRoute = () => {
+    setIsDrawingRoute(false);
+  };
+
+  const clearRoute = () => {
+    setRoute(null);
+    setIsDrawingRoute(false);
   };
 
   // Voeg een nieuw doelvak toe
@@ -151,6 +199,10 @@ export const Editor: React.FC = () => {
           alert('Vul eerst een vraag in!');
           return;
       }
+      if (exerciseType === 'route' && (!route || route.points.length < 2)) {
+          alert('Teken eerst een route met minimaal 2 punten!');
+          return;
+      }
       const situation: Situation = {
           id: editingId || Date.now().toString(),
           question,
@@ -161,6 +213,8 @@ export const Editor: React.FC = () => {
           targetAreas: targetAreas,
           draggableType,
           answerCount,
+          exerciseType,
+          route: exerciseType === 'route' ? route || undefined : undefined,
       };
       await saveSituation(situation);
       const data = await getSituations();
@@ -199,6 +253,9 @@ export const Editor: React.FC = () => {
       setTargetAreas(areas);
       setDraggableType(s.draggableType || 'team1');
       setAnswerCount(s.answerCount || 1);
+      setExerciseType(s.exerciseType || 'position');
+      setRoute(s.route || null);
+      setIsDrawingRoute(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -326,32 +383,56 @@ export const Editor: React.FC = () => {
             </div>
         </div>
 
-        {/* Aantal antwoorden */}
-        <div className="mb-5 p-4 bg-purple-50 rounded-xl">
-            <label className="block text-sm font-bold text-gray-700 mb-3">🔢 Hoeveel symbolen moet de speler plaatsen?</label>
-            <div className="flex items-center gap-3 max-w-xs mx-auto">
-                <button
-                    type="button"
-                    onClick={() => setAnswerCount(Math.max(1, answerCount - 1))}
-                    className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
-                >
-                    −
-                </button>
-                <div className="flex-1 text-center">
-                    <span className="text-3xl font-bold text-purple-700">{answerCount}</span>
-                    <p className="text-xs text-purple-600 mt-1">{answerCount === 1 ? 'symbool' : 'symbolen'}</p>
-                </div>
-                <button
-                    type="button"
-                    onClick={() => setAnswerCount(Math.min(5, answerCount + 1))}
-                    className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
-                >
-                    +
-                </button>
+        {/* Type oefening selector */}
+        <div className="mb-5 p-4 bg-indigo-50 rounded-xl">
+            <label className="block text-sm font-bold text-gray-700 mb-3">📋 Type oefening:</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setExerciseType('position')}
+                className={`btn-bounce px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${exerciseType === 'position' ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg scale-105' : 'bg-white text-indigo-700 hover:bg-indigo-50 border-2 border-indigo-200'}`}
+              >
+                <Target size={16} /> Positie (sleep naar doelvak)
+              </button>
+              <button
+                type="button"
+                onClick={() => setExerciseType('route')}
+                className={`btn-bounce px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${exerciseType === 'route' ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg scale-105' : 'bg-white text-orange-700 hover:bg-orange-50 border-2 border-orange-200'}`}
+              >
+                <RouteIcon size={16} /> Route (volg de lijn)
+              </button>
             </div>
         </div>
 
-        {/* Doelvakken instellingen */}
+        {/* Positie-specifieke opties */}
+        {exerciseType === 'position' && (
+          <>
+            {/* Aantal antwoorden */}
+            <div className="mb-5 p-4 bg-purple-50 rounded-xl">
+                <label className="block text-sm font-bold text-gray-700 mb-3">🔢 Hoeveel symbolen moet de speler plaatsen?</label>
+                <div className="flex items-center gap-3 max-w-xs mx-auto">
+                    <button
+                        type="button"
+                        onClick={() => setAnswerCount(Math.max(1, answerCount - 1))}
+                        className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
+                    >
+                        −
+                    </button>
+                    <div className="flex-1 text-center">
+                        <span className="text-3xl font-bold text-purple-700">{answerCount}</span>
+                        <p className="text-xs text-purple-600 mt-1">{answerCount === 1 ? 'symbool' : 'symbolen'}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setAnswerCount(Math.min(5, answerCount + 1))}
+                        className="btn-bounce w-10 h-10 bg-white rounded-xl text-purple-700 font-bold text-xl border-2 border-purple-200 hover:bg-purple-100"
+                    >
+                        +
+                    </button>
+                </div>
+            </div>
+
+            {/* Doelvakken instellingen */}
         <div className="mb-5 p-4 bg-amber-50 rounded-xl">
             <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-bold text-gray-700">🎯 Doelvakken ({targetAreas.length})</label>
@@ -398,6 +479,87 @@ export const Editor: React.FC = () => {
                 </div>
             )}
         </div>
+          </>
+        )}
+
+        {/* Route-specifieke opties */}
+        {exerciseType === 'route' && (
+          <div className="mb-5 p-4 bg-orange-50 rounded-xl">
+            <label className="block text-sm font-bold text-gray-700 mb-3">🛤️ Teken de route op het veld:</label>
+            
+            {!isDrawingRoute && !route && (
+              <button
+                type="button"
+                onClick={startDrawingRoute}
+                className="btn-bounce px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 flex items-center gap-2"
+              >
+                <RouteIcon size={16} /> Start route tekenen
+              </button>
+            )}
+            
+            {isDrawingRoute && (
+              <div className="space-y-3">
+                <p className="text-sm text-orange-700">
+                  👆 Klik op het veld om punten toe te voegen. De route wordt automatisch getekend tussen de punten.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={undoLastRoutePoint}
+                    disabled={!route || route.points.length === 0}
+                    className="btn-bounce px-3 py-1.5 bg-white text-orange-700 rounded-lg text-sm font-bold hover:bg-orange-100 border-2 border-orange-200 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Undo2 size={14} /> Ongedaan maken
+                  </button>
+                  <button
+                    type="button"
+                    onClick={finishDrawingRoute}
+                    disabled={!route || route.points.length < 2}
+                    className="btn-bounce px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ✓ Route voltooien
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearRoute}
+                    className="btn-bounce px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200 flex items-center gap-1"
+                  >
+                    <Trash2 size={14} /> Wis route
+                  </button>
+                </div>
+                {route && (
+                  <p className="text-xs text-orange-600">
+                    📍 {route.points.length} punt{route.points.length !== 1 ? 'en' : ''} geplaatst
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {!isDrawingRoute && route && route.points.length >= 2 && (
+              <div className="space-y-3">
+                <p className="text-sm text-green-700">
+                  ✓ Route getekend met {route.points.length} punten
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={startDrawingRoute}
+                    className="btn-bounce px-3 py-1.5 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 flex items-center gap-1"
+                  >
+                    <RouteIcon size={14} /> Opnieuw tekenen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearRoute}
+                    className="btn-bounce px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200 flex items-center gap-1"
+                  >
+                    <Trash2 size={14} /> Wis route
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Spelers toevoegen toolbar */}
         <div className="mb-5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
@@ -443,14 +605,20 @@ export const Editor: React.FC = () => {
         </div>
 
         {/* Voetbalveld */}
-        <div ref={fieldRef} className="relative touch-none"> 
+        <div 
+          ref={fieldRef} 
+          className={`relative touch-none ${isDrawingRoute ? 'cursor-crosshair' : ''}`}
+          onClick={isDrawingRoute ? handleFieldClickForRoute : undefined}
+        > 
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <SoccerField>
                 {players.map((p) => (
                     <DraggablePlayer key={p.id} player={p} />
                 ))}
                 {ball && <DraggableBall ball={ball} />}
-                {targetAreas.map((t, i) => (
+                
+                {/* Doelvakken alleen bij position type */}
+                {exerciseType === 'position' && targetAreas.map((t, i) => (
                     <DraggableTarget 
                         key={t.id} 
                         target={t} 
@@ -460,12 +628,78 @@ export const Editor: React.FC = () => {
                         fieldRef={fieldRef as React.RefObject<HTMLDivElement>}
                     />
                 ))}
+                
+                {/* Route visualisatie */}
+                {route && route.points.length > 0 && (
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 50 }}>
+                    {/* Route lijn */}
+                    {route.points.length > 1 && (
+                      <polyline
+                        points={route.points.map(p => `${p.x}%,${p.y}%`).join(' ')}
+                        fill="none"
+                        stroke={route.color || '#ff6b35'}
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeDasharray={isDrawingRoute ? "10,5" : "none"}
+                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                      />
+                    )}
+                    {/* Route punten */}
+                    {route.points.map((point, i) => (
+                      <g key={i}>
+                        <circle
+                          cx={`${point.x}%`}
+                          cy={`${point.y}%`}
+                          r="8"
+                          fill={i === 0 ? '#22c55e' : i === route.points.length - 1 ? '#ef4444' : route.color || '#ff6b35'}
+                          stroke="white"
+                          strokeWidth="3"
+                          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                        />
+                        <text
+                          x={`${point.x}%`}
+                          y={`${point.y}%`}
+                          dy="0.35em"
+                          textAnchor="middle"
+                          fill="white"
+                          fontSize="10"
+                          fontWeight="bold"
+                        >
+                          {i + 1}
+                        </text>
+                      </g>
+                    ))}
+                    {/* Pijl aan het einde */}
+                    {route.points.length > 1 && !isDrawingRoute && (
+                      <polygon
+                        points={(() => {
+                          const last = route.points[route.points.length - 1];
+                          const prev = route.points[route.points.length - 2];
+                          const angle = Math.atan2(last.y - prev.y, last.x - prev.x);
+                          const arrowSize = 2;
+                          const tipX = last.x + Math.cos(angle) * 1.5;
+                          const tipY = last.y + Math.sin(angle) * 1.5;
+                          return `${tipX}%,${tipY}% ${tipX - arrowSize * Math.cos(angle - 0.5)}%,${tipY - arrowSize * Math.sin(angle - 0.5)}% ${tipX - arrowSize * Math.cos(angle + 0.5)}%,${tipY - arrowSize * Math.sin(angle + 0.5)}%`;
+                        })()}
+                        fill={route.color || '#ff6b35'}
+                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                      />
+                    )}
+                  </svg>
+                )}
             </SoccerField>
             </DndContext>
         </div>
         
         <p className="text-center text-gray-500 mt-4 font-medium">
-            👆 Sleep de spelers, bal en de <span className="text-amber-600 font-bold">gele doelvakken</span> naar de juiste posities
+            {isDrawingRoute ? (
+              <>👆 Klik op het veld om punten aan de route toe te voegen</>
+            ) : exerciseType === 'route' ? (
+              <>🛤️ De <span className="text-orange-600 font-bold">oranje route</span> toont het pad dat de speler moet volgen</>
+            ) : (
+              <>👆 Sleep de spelers, bal en de <span className="text-amber-600 font-bold">gele doelvakken</span> naar de juiste posities</>
+            )}
         </p>
       </div>
 

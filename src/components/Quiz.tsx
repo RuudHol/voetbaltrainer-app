@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getSituations } from '../utils/storage';
-import { Situation, DraggableType, PlayerColor, TargetArea } from '../types';
+import { Situation, DraggableType, PlayerColor, TargetArea, Route, RoutePoint } from '../types';
 import { SoccerField } from './SoccerField';
 import { BallToken } from './BallToken';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
@@ -244,6 +244,8 @@ export const Quiz: React.FC = () => {
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [routeProgress, setRouteProgress] = useState(0); // Welk punt van de route de speler heeft bereikt
+  const [routeUserPosition, setRouteUserPosition] = useState<{ x: number; y: number } | null>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
@@ -393,6 +395,65 @@ export const Quiz: React.FC = () => {
       const count = s.answerCount || 1;
       setUserPositions(generateStartPositions(count));
       setFeedback('none');
+      
+      // Reset route state
+      setRouteProgress(0);
+      if (s.exerciseType === 'route' && s.route && s.route.points.length > 0) {
+          // Start positie is het eerste punt van de route
+          setRouteUserPosition({ x: s.route.points[0].x, y: s.route.points[0].y });
+      } else {
+          setRouteUserPosition(null);
+      }
+  };
+
+  // Check of gebruiker dichtbij een route punt is
+  const isNearRoutePoint = (userPos: { x: number; y: number }, routePoint: RoutePoint, threshold: number = 5): boolean => {
+      const distance = Math.sqrt(Math.pow(userPos.x - routePoint.x, 2) + Math.pow(userPos.y - routePoint.y, 2));
+      return distance <= threshold;
+  };
+
+  // Handle drag voor route oefeningen
+  const handleRouteDragEnd = (event: DragEndEvent) => {
+      const { delta } = event;
+      if (!fieldRef.current || !currentSituation || !currentSituation.route || !routeUserPosition) return;
+
+      const rect = fieldRef.current.getBoundingClientRect();
+      const deltaXPercent = (delta.x / rect.width) * 100;
+      const deltaYPercent = (delta.y / rect.height) * 100;
+
+      const newPosition = {
+          x: Math.max(0, Math.min(100, routeUserPosition.x + deltaXPercent)),
+          y: Math.max(0, Math.min(100, routeUserPosition.y + deltaYPercent)),
+      };
+
+      setRouteUserPosition(newPosition);
+
+      const route = currentSituation.route;
+      const nextPointIndex = routeProgress + 1;
+
+      // Check of we het volgende punt hebben bereikt
+      if (nextPointIndex < route.points.length) {
+          const nextPoint = route.points[nextPointIndex];
+          if (isNearRoutePoint(newPosition, nextPoint, 8)) {
+              setRouteProgress(nextPointIndex);
+              
+              // Visuele feedback per checkpoint
+              if (nextPointIndex < route.points.length - 1) {
+                  // Nog niet klaar - kleine feedback
+                  speakText('Goed zo!');
+              }
+              
+              // Check of we de hele route hebben voltooid
+              if (nextPointIndex === route.points.length - 1) {
+                  setFeedback('success');
+                  setScore(prev => prev + 1);
+                  setStreak(prev => prev + 1);
+                  setAttempts(prev => prev + 1);
+                  speakText('Super goed! Je hebt de route gevolgd!');
+                  triggerSuccessConfetti();
+              }
+          }
+      }
   };
 
   const goToNextExercise = () => {
@@ -473,8 +534,11 @@ export const Quiz: React.FC = () => {
                                       <div className="font-bold text-lg text-gray-800 group-hover:text-green-700 transition-colors">
                                           {s.question}
                                       </div>
-                                      <div className="flex items-center gap-3 mt-1">
+                                      <div className="flex items-center gap-3 mt-1 flex-wrap">
                                           <span className="text-sm text-gray-500">{s.players.length} spelers</span>
+                                          {s.exerciseType === 'route' && (
+                                              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">🛤️ Route</span>
+                                          )}
                                           {s.questionAudio && (
                                               <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">🎤 Audio</span>
                                           )}
@@ -546,7 +610,7 @@ export const Quiz: React.FC = () => {
               </div>
               
               <div ref={fieldRef} className="relative touch-none">
-                  <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                  <DndContext sensors={sensors} onDragEnd={currentSituation.exerciseType === 'route' ? handleRouteDragEnd : handleDragEnd}>
                       <SoccerField players={currentSituation.players}>
                           {/* Doelvakken zijn verborgen voor de speler - alleen zichtbaar bij succes */}
                           
@@ -555,7 +619,63 @@ export const Quiz: React.FC = () => {
                               <BallToken ball={currentSituation.ball} />
                           )}
                           
-                          {feedback !== 'success' && userPositions.map((pos, index) => (
+                          {/* Route visualisatie */}
+                          {currentSituation.exerciseType === 'route' && currentSituation.route && (
+                            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 40 }}>
+                              {/* Route lijn - al bereikte deel */}
+                              {routeProgress > 0 && (
+                                <polyline
+                                  points={currentSituation.route.points.slice(0, routeProgress + 1).map(p => `${p.x}%,${p.y}%`).join(' ')}
+                                  fill="none"
+                                  stroke="#22c55e"
+                                  strokeWidth="6"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                                />
+                              )}
+                              {/* Route lijn - nog te volgen deel */}
+                              <polyline
+                                points={currentSituation.route.points.slice(routeProgress).map(p => `${p.x}%,${p.y}%`).join(' ')}
+                                fill="none"
+                                stroke={currentSituation.route.color || '#ff6b35'}
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeDasharray="10,5"
+                                opacity="0.7"
+                                style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
+                              />
+                              {/* Route punten */}
+                              {currentSituation.route.points.map((point, i) => (
+                                <g key={i}>
+                                  <circle
+                                    cx={`${point.x}%`}
+                                    cy={`${point.y}%`}
+                                    r={i <= routeProgress ? "10" : "8"}
+                                    fill={i < routeProgress ? '#22c55e' : i === routeProgress ? '#3b82f6' : i === currentSituation.route!.points.length - 1 ? '#ef4444' : '#ff6b35'}
+                                    stroke="white"
+                                    strokeWidth="3"
+                                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                                  />
+                                  <text
+                                    x={`${point.x}%`}
+                                    y={`${point.y}%`}
+                                    dy="0.35em"
+                                    textAnchor="middle"
+                                    fill="white"
+                                    fontSize="10"
+                                    fontWeight="bold"
+                                  >
+                                    {i === 0 ? 'S' : i === currentSituation.route!.points.length - 1 ? 'F' : i + 1}
+                                  </text>
+                                </g>
+                              ))}
+                            </svg>
+                          )}
+                          
+                          {/* Position-based exercise: draggable tokens */}
+                          {currentSituation.exerciseType !== 'route' && feedback !== 'success' && userPositions.map((pos, index) => (
                               <DraggableUserToken 
                                   key={index}
                                   x={pos.x} 
@@ -566,6 +686,17 @@ export const Quiz: React.FC = () => {
                               />
                           ))}
                           
+                          {/* Route-based exercise: draggable token op route */}
+                          {currentSituation.exerciseType === 'route' && routeUserPosition && feedback !== 'success' && (
+                              <DraggableUserToken 
+                                  x={routeUserPosition.x} 
+                                  y={routeUserPosition.y} 
+                                  type={currentSituation.draggableType || 'team1'}
+                                  index={0}
+                                  total={1}
+                              />
+                          )}
+                          
                           {/* Success Overlay */}
                           {feedback === 'success' && (
                               <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl z-50 animate-pop-in">
@@ -575,7 +706,9 @@ export const Quiz: React.FC = () => {
                                       </div>
                                       <div className="text-center">
                                           <p className="text-2xl font-bold text-green-600" style={{ fontFamily: 'Fredoka, sans-serif' }}>Super goed!</p>
-                                          <p className="text-gray-500 mt-1">Je staat op de juiste plek! ⭐</p>
+                                          <p className="text-gray-500 mt-1">
+                                            {currentSituation.exerciseType === 'route' ? 'Je hebt de route gevolgd! 🛤️' : 'Je staat op de juiste plek! ⭐'}
+                                          </p>
                                       </div>
                                       <button 
                                           onClick={goToNextExercise}
@@ -603,19 +736,43 @@ export const Quiz: React.FC = () => {
               
               {/* Help tekst en check knop */}
               <div className="mt-4 flex flex-col items-center gap-3">
-                  <p className="text-center text-gray-500 font-medium">
-                      👆 Sleep {userPositions.length > 1 ? `alle ${userPositions.length} symbolen` : 'het symbool'} naar de juiste {userPositions.length > 1 ? 'posities' : 'positie'}!
-                  </p>
-                  
-                  {/* Check knop bij meerdere symbolen */}
-                  {userPositions.length > 1 && feedback !== 'success' && (
-                      <button
-                          onClick={checkAnswer}
-                          className="btn-bounce px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
-                      >
-                          <CheckCircle size={20} />
-                          Controleer antwoord
-                      </button>
+                  {currentSituation.exerciseType === 'route' ? (
+                    <>
+                      <p className="text-center text-gray-500 font-medium">
+                          🛤️ Sleep het symbool langs de route van <span className="text-green-600 font-bold">Start (S)</span> naar <span className="text-red-600 font-bold">Finish (F)</span>!
+                      </p>
+                      {/* Route progress indicator */}
+                      {currentSituation.route && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">Voortgang:</span>
+                          <div className="flex gap-1">
+                            {currentSituation.route.points.map((_, i) => (
+                              <div 
+                                key={i} 
+                                className={`w-3 h-3 rounded-full transition-colors ${i <= routeProgress ? 'bg-green-500' : 'bg-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-center text-gray-500 font-medium">
+                          👆 Sleep {userPositions.length > 1 ? `alle ${userPositions.length} symbolen` : 'het symbool'} naar de juiste {userPositions.length > 1 ? 'posities' : 'positie'}!
+                      </p>
+                      
+                      {/* Check knop bij meerdere symbolen */}
+                      {userPositions.length > 1 && feedback !== 'success' && (
+                          <button
+                              onClick={checkAnswer}
+                              className="btn-bounce px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                          >
+                              <CheckCircle size={20} />
+                              Controleer antwoord
+                          </button>
+                      )}
+                    </>
                   )}
               </div>
           </div>
