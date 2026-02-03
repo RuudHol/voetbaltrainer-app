@@ -628,50 +628,52 @@ export const Quiz: React.FC = () => {
                           
                           {/* Route visualisatie */}
                           {currentSituation.exerciseType === 'route' && currentSituation.route && (
-                            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 40 }}>
+                            <svg 
+                              viewBox="0 0 100 100" 
+                              preserveAspectRatio="none"
+                              className="absolute inset-0 w-full h-full pointer-events-none" 
+                              style={{ zIndex: 40 }}
+                            >
                               {/* Route lijn - al bereikte deel */}
                               {routeProgress > 0 && (
                                 <polyline
-                                  points={currentSituation.route.points.slice(0, routeProgress + 1).map(p => `${p.x}%,${p.y}%`).join(' ')}
+                                  points={currentSituation.route.points.slice(0, routeProgress + 1).map(p => `${p.x},${p.y}`).join(' ')}
                                   fill="none"
                                   stroke="#22c55e"
-                                  strokeWidth="6"
+                                  strokeWidth="1.5"
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
-                                  style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
                                 />
                               )}
                               {/* Route lijn - nog te volgen deel */}
                               <polyline
-                                points={currentSituation.route.points.slice(routeProgress).map(p => `${p.x}%,${p.y}%`).join(' ')}
+                                points={currentSituation.route.points.slice(routeProgress).map(p => `${p.x},${p.y}`).join(' ')}
                                 fill="none"
                                 stroke={currentSituation.route.color || '#ff6b35'}
-                                strokeWidth="4"
+                                strokeWidth="1"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                strokeDasharray="10,5"
+                                strokeDasharray="2,1"
                                 opacity="0.7"
-                                style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
                               />
                               {/* Route punten */}
                               {currentSituation.route.points.map((point, i) => (
                                 <g key={i}>
                                   <circle
-                                    cx={`${point.x}%`}
-                                    cy={`${point.y}%`}
-                                    r={i <= routeProgress ? "10" : "8"}
+                                    cx={point.x}
+                                    cy={point.y}
+                                    r={i <= routeProgress ? 2.5 : 2}
                                     fill={i < routeProgress ? '#22c55e' : i === routeProgress ? '#3b82f6' : i === currentSituation.route!.points.length - 1 ? '#ef4444' : '#ff6b35'}
                                     stroke="white"
-                                    strokeWidth="3"
-                                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                                    strokeWidth="0.5"
                                   />
                                   <text
-                                    x={`${point.x}%`}
-                                    y={`${point.y}%`}
-                                    dy="0.35em"
+                                    x={point.x}
+                                    y={point.y}
+                                    dy="0.7"
                                     textAnchor="middle"
                                     fill="white"
-                                    fontSize="10"
+                                    fontSize="2"
                                     fontWeight="bold"
                                   >
                                     {i === 0 ? 'S' : i === currentSituation.route!.points.length - 1 ? 'F' : i + 1}

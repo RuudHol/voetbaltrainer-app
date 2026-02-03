@@ -631,39 +631,43 @@ export const Editor: React.FC = () => {
                 
                 {/* Route visualisatie */}
                 {route && route.points.length > 0 && (
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 50 }}>
+                  <svg 
+                    viewBox="0 0 100 100" 
+                    preserveAspectRatio="none"
+                    className="absolute inset-0 w-full h-full pointer-events-none" 
+                    style={{ zIndex: 50 }}
+                  >
                     {/* Route lijn */}
                     {route.points.length > 1 && (
                       <polyline
-                        points={route.points.map(p => `${p.x}%,${p.y}%`).join(' ')}
+                        points={route.points.map(p => `${p.x},${p.y}`).join(' ')}
                         fill="none"
                         stroke={route.color || '#ff6b35'}
-                        strokeWidth="4"
+                        strokeWidth="1"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeDasharray={isDrawingRoute ? "10,5" : "none"}
-                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                        strokeDasharray={isDrawingRoute ? "2,1" : "none"}
+                        style={{ filter: 'drop-shadow(0 0.5px 1px rgba(0,0,0,0.3))' }}
                       />
                     )}
                     {/* Route punten */}
                     {route.points.map((point, i) => (
                       <g key={i}>
                         <circle
-                          cx={`${point.x}%`}
-                          cy={`${point.y}%`}
-                          r="8"
+                          cx={point.x}
+                          cy={point.y}
+                          r="2"
                           fill={i === 0 ? '#22c55e' : i === route.points.length - 1 ? '#ef4444' : route.color || '#ff6b35'}
                           stroke="white"
-                          strokeWidth="3"
-                          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                          strokeWidth="0.5"
                         />
                         <text
-                          x={`${point.x}%`}
-                          y={`${point.y}%`}
-                          dy="0.35em"
+                          x={point.x}
+                          y={point.y}
+                          dy="0.7"
                           textAnchor="middle"
                           fill="white"
-                          fontSize="10"
+                          fontSize="2"
                           fontWeight="bold"
                         >
                           {i + 1}
@@ -680,10 +684,9 @@ export const Editor: React.FC = () => {
                           const arrowSize = 2;
                           const tipX = last.x + Math.cos(angle) * 1.5;
                           const tipY = last.y + Math.sin(angle) * 1.5;
-                          return `${tipX}%,${tipY}% ${tipX - arrowSize * Math.cos(angle - 0.5)}%,${tipY - arrowSize * Math.sin(angle - 0.5)}% ${tipX - arrowSize * Math.cos(angle + 0.5)}%,${tipY - arrowSize * Math.sin(angle + 0.5)}%`;
+                          return `${tipX},${tipY} ${tipX - arrowSize * Math.cos(angle - 0.5)},${tipY - arrowSize * Math.sin(angle - 0.5)} ${tipX - arrowSize * Math.cos(angle + 0.5)},${tipY - arrowSize * Math.sin(angle + 0.5)}`;
                         })()}
                         fill={route.color || '#ff6b35'}
-                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
                       />
                     )}
                   </svg>
