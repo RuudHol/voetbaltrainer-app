@@ -111,6 +111,14 @@ export const Editor: React.FC = () => {
     }
   };
 
+  const deletePlayer = (playerId: string) => {
+    setPlayers(players.filter(p => p.id !== playerId));
+  };
+
+  const deleteBall = () => {
+    setBall(null);
+  };
+
   const clearAll = () => {
     setPlayers([]);
     setBall(null);
@@ -613,9 +621,9 @@ export const Editor: React.FC = () => {
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <SoccerField>
                 {players.map((p) => (
-                    <DraggablePlayer key={p.id} player={p} />
+                    <DraggablePlayer key={p.id} player={p} onDelete={() => deletePlayer(p.id)} />
                 ))}
-                {ball && <DraggableBall ball={ball} />}
+                {ball && <DraggableBall ball={ball} onDelete={deleteBall} />}
                 
                 {/* Doelvakken alleen bij position type */}
                 {exerciseType === 'position' && targetAreas.map((t, i) => (

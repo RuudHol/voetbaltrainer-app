@@ -626,58 +626,34 @@ export const Quiz: React.FC = () => {
                               <BallToken ball={currentSituation.ball} />
                           )}
                           
-                          {/* Route visualisatie */}
-                          {currentSituation.exerciseType === 'route' && currentSituation.route && (
+                          {/* Route visualisatie - alleen bereikte punten tonen voor speler */}
+                          {currentSituation.exerciseType === 'route' && currentSituation.route && routeProgress > 0 && (
                             <svg 
                               viewBox="0 0 100 100" 
                               preserveAspectRatio="none"
                               className="absolute inset-0 w-full h-full pointer-events-none" 
                               style={{ zIndex: 40 }}
                             >
-                              {/* Route lijn - al bereikte deel */}
-                              {routeProgress > 0 && (
-                                <polyline
-                                  points={currentSituation.route.points.slice(0, routeProgress + 1).map(p => `${p.x},${p.y}`).join(' ')}
-                                  fill="none"
-                                  stroke="#22c55e"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              )}
-                              {/* Route lijn - nog te volgen deel */}
+                              {/* Route lijn - alleen al bereikte deel (groen) */}
                               <polyline
-                                points={currentSituation.route.points.slice(routeProgress).map(p => `${p.x},${p.y}`).join(' ')}
+                                points={currentSituation.route.points.slice(0, routeProgress + 1).map(p => `${p.x},${p.y}`).join(' ')}
                                 fill="none"
-                                stroke={currentSituation.route.color || '#ff6b35'}
-                                strokeWidth="1"
+                                stroke="#22c55e"
+                                strokeWidth="1.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                strokeDasharray="2,1"
-                                opacity="0.7"
                               />
-                              {/* Route punten */}
-                              {currentSituation.route.points.map((point, i) => (
+                              {/* Alleen bereikte punten tonen */}
+                              {currentSituation.route.points.slice(0, routeProgress + 1).map((point, i) => (
                                 <g key={i}>
                                   <circle
                                     cx={point.x}
                                     cy={point.y}
-                                    r={i <= routeProgress ? 2.5 : 2}
-                                    fill={i < routeProgress ? '#22c55e' : i === routeProgress ? '#3b82f6' : i === currentSituation.route!.points.length - 1 ? '#ef4444' : '#ff6b35'}
+                                    r={2}
+                                    fill="#22c55e"
                                     stroke="white"
                                     strokeWidth="0.5"
                                   />
-                                  <text
-                                    x={point.x}
-                                    y={point.y}
-                                    dy="0.7"
-                                    textAnchor="middle"
-                                    fill="white"
-                                    fontSize="2"
-                                    fontWeight="bold"
-                                  >
-                                    {i === 0 ? 'S' : i === currentSituation.route!.points.length - 1 ? 'F' : i + 1}
-                                  </text>
                                 </g>
                               ))}
                             </svg>
@@ -748,22 +724,8 @@ export const Quiz: React.FC = () => {
                   {currentSituation.exerciseType === 'route' ? (
                     <>
                       <p className="text-center text-gray-500 font-medium">
-                          🛤️ Sleep het symbool langs de route van <span className="text-green-600 font-bold">Start (S)</span> naar <span className="text-red-600 font-bold">Finish (F)</span>!
+                          🛤️ Sleep het shirt naar waar jij denkt dat je moet lopen!
                       </p>
-                      {/* Route progress indicator */}
-                      {currentSituation.route && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">Voortgang:</span>
-                          <div className="flex gap-1">
-                            {currentSituation.route.points.map((_, i) => (
-                              <div 
-                                key={i} 
-                                className={`w-3 h-3 rounded-full transition-colors ${i <= routeProgress ? 'bg-green-500' : 'bg-gray-300'}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </>
                   ) : (
                     <>
